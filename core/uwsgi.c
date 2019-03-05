@@ -20,8 +20,14 @@
 
 */
 
-
 #include <uwsgi.h>
+
+// -- just for the eclipse parser, have these defined here
+#define UWSGI_BUILD_DATE "1/1/2000"
+#define UWSGI_VERSION "2.0.18"
+#define UWSGI_CFLAGS "-O0 -g"
+#define RTLD_DEFAULT   ((void *) 0)
+// -- comment out the defs above when building
 
 struct uwsgi_server uwsgi;
 pid_t masterpid;
