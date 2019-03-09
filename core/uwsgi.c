@@ -22,13 +22,6 @@
 
 #include <uwsgi.h>
 
-// -- just for the eclipse parser, have these defined here
-#define UWSGI_BUILD_DATE "1/1/2000"
-#define UWSGI_VERSION "2.0.18"
-#define UWSGI_CFLAGS "-O0 -g"
-#define RTLD_DEFAULT   ((void *) 0)
-// -- comment out the defs above when building
-
 struct uwsgi_server uwsgi;
 pid_t masterpid;
 
@@ -714,7 +707,7 @@ static struct uwsgi_option uwsgi_base_options[] = {
 
 	{"log-encoder", required_argument, 0, "add an item in the log encoder chain", uwsgi_opt_add_string_list, &uwsgi.requested_log_encoders, UWSGI_OPT_MASTER | UWSGI_OPT_LOG_MASTER},
 	{"log-req-encoder", required_argument, 0, "add an item in the log req encoder chain", uwsgi_opt_add_string_list, &uwsgi.requested_log_req_encoders, UWSGI_OPT_MASTER | UWSGI_OPT_LOG_MASTER},
-	
+
 
 #ifdef UWSGI_PCRE
 	{"log-drain", required_argument, 0, "drain (do not show) log lines matching the specified regexp", uwsgi_opt_add_regexp_list, &uwsgi.log_drain_rules, UWSGI_OPT_MASTER | UWSGI_OPT_LOG_MASTER},
@@ -1158,7 +1151,7 @@ reuse:
 	}
 
 	// first round ?
-	if (!uwsgi.magic_table_first_round) { 
+	if (!uwsgi.magic_table_first_round) {
 		magic_table['O'] = magic_table['o'];
                 magic_table['D'] = magic_table['d'];
                 magic_table['S'] = magic_table['s'];
@@ -1380,7 +1373,7 @@ void grace_them_all(int signum) {
 		}
 		return;
 	}
-	
+
 
 	uwsgi.status.gracefully_reloading = 1;
 
@@ -1578,7 +1571,7 @@ struct uwsgi_plugin unconfigured_plugin = {
 
 void uwsgi_exec_atexit(void) {
 	if (getpid() == masterpid) {
-	
+
 		uwsgi_hooks_run(uwsgi.hook_as_user_atexit, "atexit", 0);
 		// now run exit scripts needed by the user
 		struct uwsgi_string_list *usl;
@@ -1751,7 +1744,7 @@ static void fixup_argv_and_environ(int argc, char **argv, char **environ, char *
 
 	// avoid messing with fake environ
 	if (envp && *environ != *envp) return;
-	
+
 
 #if defined(__linux__) || defined(__sun__)
 
@@ -1855,9 +1848,9 @@ void uwsgi_backtrace(int depth) {
 
 	struct uwsgi_string_list *usl = uwsgi.alarm_segfault;
 	while(usl) {
-		uwsgi_alarm_trigger(usl->value, ub->buf, ub->pos);	
+		uwsgi_alarm_trigger(usl->value, ub->buf, ub->pos);
 		usl = usl->next;
-	}	
+	}
 
 	uwsgi_buffer_destroy(ub);
 #endif
@@ -4033,7 +4026,7 @@ void uwsgi_opt_uid(char *opt, char *value, void *key) {
 	if (!uid) {
 		struct passwd *p = getpwnam(value);
 		if (p) {
-			uid = p->pw_uid;	
+			uid = p->pw_uid;
 		}
 		else {
 			uwsgi_log("unable to find user %s\n", value);
@@ -4058,12 +4051,12 @@ void uwsgi_opt_gid(char *opt, char *value, void *key) {
                         uwsgi_log("unable to find group %s\n", value);
 			exit(1);
                 }
-        }       
+        }
         if (key)  {
                 gid_t *ptr = (gid_t *) key;
                 *ptr = gid;
-        }       
-}     
+        }
+}
 
 void uwsgi_opt_set_rawint(char *opt, char *value, void *key) {
 	int *ptr = (int *) key;
@@ -4110,7 +4103,7 @@ void uwsgi_opt_set_str(char *opt, char *value, void *key) {
 	char **ptr = (char **) key;
 	if (!value) {
 		*ptr = "";
-		return;	
+		return;
 	}
 	*ptr = (char *) value;
 }
@@ -4168,7 +4161,7 @@ void uwsgi_opt_add_addr_list(char *opt, char *value, void *list) {
 #else
 	void *ip = uwsgi_malloc(4);
 #endif
-	
+
 	if (inet_pton(af, value, ip) <= 0) {
 		uwsgi_log("%s: invalid address\n", opt);
 		uwsgi_error("uwsgi_opt_add_addr_list()");
@@ -4954,7 +4947,7 @@ void uwsgi_print_sym(char *opt, char *symbol, void *foobar) {
 		uwsgi_log("%s", *sym);
 		exit(0);
 	}
-	
+
 	char *symbol_start = uwsgi_concat2(symbol, "_start");
 	char *symbol_end = uwsgi_concat2(symbol, "_end");
 

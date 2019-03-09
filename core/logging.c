@@ -26,20 +26,21 @@ void uwsgi_log(const char *fmt, ...) {
 	char logpkt[4096];
 	int rlen = 0;
 	int ret;
-
-	struct timeval tv;
+	//--geo: enforce more compact strftime format
+	//struct timeval tv;
 	char sftime[64];
-	char ctime_storage[26];
+	//char ctime_storage[26];
 	time_t now;
-
 	if (uwsgi.logdate) {
-		if (uwsgi.log_strftime) {
+		//if (uwsgi.log_strftime) {
 			now = uwsgi_now();
-			rlen = strftime(sftime, 64, uwsgi.log_strftime, localtime(&now));
+			//rlen = strftime(sftime, 64, uwsgi.log_strftime, localtime(&now));
+			//--geo: enforce more compact strftime format
+			rlen = strftime(sftime, 64, "[%D %T]", localtime(&now));
 			memcpy(logpkt, sftime, rlen);
 			memcpy(logpkt + rlen, " - ", 3);
 			rlen += 3;
-		}
+		/*}
 		else {
 			gettimeofday(&tv, NULL);
 #if defined(__sun__) && !defined(__clang__)
@@ -52,6 +53,7 @@ void uwsgi_log(const char *fmt, ...) {
 
 			rlen = 24 + 3;
 		}
+		*/
 	}
 
 	va_start(ap, fmt);
@@ -73,6 +75,30 @@ void uwsgi_log(const char *fmt, ...) {
 	// do not check for errors
 	rlen = write(2, logpkt, rlen);
 }
+
+void uwsgi_lograw(const char *fmt, ...) {
+	va_list ap;
+	char logpkt[4096];
+	int rlen = 0;
+	int ret;
+	va_start(ap, fmt);
+	ret = vsnprintf(logpkt + rlen, 4096 - rlen, fmt, ap);
+	va_end(ap);
+	if (ret >= 4096) {
+		char *tmp_buf = uwsgi_malloc(rlen + ret + 1);
+		memcpy(tmp_buf, logpkt, rlen);
+		va_start(ap, fmt);
+		ret = vsnprintf(tmp_buf + rlen, ret + 1, fmt, ap);
+		va_end(ap);
+		rlen = write(2, tmp_buf, rlen + ret);
+		free(tmp_buf);
+		return;
+	}
+	rlen += ret;
+	// do not check for errors
+	rlen = write(2, logpkt, rlen);
+}
+
 
 void uwsgi_log_verbose(const char *fmt, ...) {
 
@@ -325,7 +351,7 @@ void logto(char *logfile) {
 
 
 void uwsgi_setup_log() {
-	
+
 	uwsgi_setup_log_encoders();
 
 	if (uwsgi.daemonize) {
@@ -675,7 +701,7 @@ void uwsgi_logit_simple(struct wsgi_request *wsgi_req) {
 			via = msg4;
 			break;
 		default:
-			break;	
+			break;
 	}
 
 #if defined(__sun__) && !defined(__clang__)
@@ -1005,7 +1031,7 @@ void uwsgi_logit_lf(struct wsgi_request *wsgi_req) {
 
 		if (uwsgi.logvectors[wsgi_req->async_id][pos].iov_len == 0 && logchunk->type != 0) {
 			uwsgi.logvectors[wsgi_req->async_id][pos].iov_base = (char *) empty_var;
-			uwsgi.logvectors[wsgi_req->async_id][pos].iov_len = 1;	
+			uwsgi.logvectors[wsgi_req->async_id][pos].iov_len = 1;
 		}
 		logchunk = logchunk->next;
 	}
@@ -1274,7 +1300,7 @@ found:
 	logchunk->func = func;
 	logchunk->free = need_free;
 	logchunk->type = 3;
-	return logchunk;	
+	return logchunk;
 }
 
 struct uwsgi_logchunk *uwsgi_get_logchunk_by_name(char *name, size_t name_len) {
@@ -1606,7 +1632,7 @@ void uwsgi_setup_log_encoders() {
 			exit(1);
 		}
 		struct uwsgi_log_encoder *ule2 = uwsgi_malloc(sizeof(struct uwsgi_log_encoder));
-		memcpy(ule2, ule, sizeof(struct uwsgi_log_encoder)); 
+		memcpy(ule2, ule, sizeof(struct uwsgi_log_encoder));
 		if (use_for) {
 			ule2->use_for = uwsgi_str(use_for+1);
 			*use_for = ':';
@@ -1799,7 +1825,7 @@ void uwsgi_log_encoder_parse_vars(struct uwsgi_log_encoder *ule) {
         strftime (strftime)
 */
 static char *uwsgi_log_encoder_format(struct uwsgi_log_encoder *ule, char *msg, size_t len, size_t *rlen) {
-	
+
 	if (!ule->configured) {
 		uwsgi_log_encoder_parse_vars(ule);
 		ule->configured = 1;

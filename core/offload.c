@@ -121,7 +121,7 @@ static int u_offload_transfer_prepare(struct wsgi_request *wsgi_req, struct uwsg
 
 	sendfile offload engine:
 		name -> filename to transfer
-		fd -> file descriptor of file to transfer	
+		fd -> file descriptor of file to transfer
 		fd2 -> sendfile destination (default wsgi_req->fd)
 		len -> size of the file or amount of data to transfer
 		pos -> position in the file
@@ -407,7 +407,7 @@ static int u_offload_sendfile_do(struct uwsgi_thread *ut, struct uwsgi_offload_r
 */
 
 static int u_offload_pipe_do(struct uwsgi_thread *ut, struct uwsgi_offload_request *uor, int fd) {
-	
+
 	ssize_t rlen;
 
 	// setup
@@ -474,7 +474,7 @@ the offload task starts soon after the call to connect()
 		4 -> write to fd
 */
 static int u_offload_transfer_do(struct uwsgi_thread *ut, struct uwsgi_offload_request *uor, int fd) {
-	
+
 	ssize_t rlen;
 
 	// setup
@@ -482,7 +482,6 @@ static int u_offload_transfer_do(struct uwsgi_thread *ut, struct uwsgi_offload_r
 		event_queue_add_fd_write(ut->queue, uor->fd);
 		return 0;
 	}
-
 	switch(uor->status) {
 		// waiting for connection
 		case 0:
@@ -502,7 +501,7 @@ static int u_offload_transfer_do(struct uwsgi_thread *ut, struct uwsgi_offload_r
 					if (event_queue_fd_write_to_read(ut->queue, uor->fd)) return -1;
 					return 0;
 				}
-				rlen = write(uor->fd, uor->ubuf->buf + uor->written, uor->ubuf->pos-uor->written);	
+				rlen = write(uor->fd, uor->ubuf->buf + uor->written, uor->ubuf->pos-uor->written);
 				if (rlen > 0) {
 					uor->written += rlen;
 					if (uor->written >= (size_t)uor->ubuf->pos) {
@@ -516,7 +515,7 @@ static int u_offload_transfer_do(struct uwsgi_thread *ut, struct uwsgi_offload_r
 					uwsgi_offload_retry
 					uwsgi_error("u_offload_transfer_do() -> write()");
 				}
-			}	
+			}
 			return -1;
 		// read event from s or fd
 		case 2:
@@ -625,7 +624,7 @@ int uwsgi_offload_run(struct wsgi_request *wsgi_req, struct uwsgi_offload_reques
         }
 
         return 0;
-	
+
 };
 
 struct uwsgi_offload_engine *uwsgi_offload_engine_by_name(char *name) {
@@ -684,6 +683,10 @@ int uwsgi_offload_request_net_do(struct wsgi_request *wsgi_req, char *socketname
 	uwsgi_offload_setup(uwsgi.offload_engine_transfer, &uor, wsgi_req, 1);
 	uor.name = socketname;
 	uor.ubuf = ubuf;
+#ifdef UWSGI_DEBUG
+	  uwsgi_log("[uwsgi_offload_request_net_do] uor.name=%s, uor address %p\n",uor.name, &uor);
+#endif
+
 	return uwsgi_offload_run(wsgi_req, &uor, NULL);
 }
 

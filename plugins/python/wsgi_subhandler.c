@@ -76,7 +76,7 @@ found:
 		return 1;
 	}
 	return 0;
-} 
+}
 
 /*
 this is a hack for supporting non-file object passed to wsgi.file_wrapper
@@ -123,10 +123,27 @@ void *uwsgi_request_subhandler_wsgi(struct wsgi_request *wsgi_req, struct uwsgi_
 	int i;
 	PyObject *pydictkey, *pydictvalue;
 	char *path_info;
-
+	//--geo: only print a subset of the request attributes
+	//char  *_request_method=NULL, *_request_uri=NULL, *_http_host=NULL,
+	//	*_remote_addr=NULL, *_remote_port=NULL;
+    int logfirst=1;
         for (i = 0; i < wsgi_req->var_cnt; i += 2) {
 #ifdef UWSGI_DEBUG
-                uwsgi_debug("%.*s: %.*s\n", wsgi_req->hvec[i].iov_len, wsgi_req->hvec[i].iov_base, wsgi_req->hvec[i+1].iov_len, wsgi_req->hvec[i+1].iov_base);
+        	if (strncmp(wsgi_req->hvec[i].iov_base, "REQUEST_METHOD", wsgi_req->hvec[i].iov_len)==0 ||
+        		strncmp(wsgi_req->hvec[i].iov_base, "REQUEST_URI", wsgi_req->hvec[i].iov_len)==0 ||
+				strncmp(wsgi_req->hvec[i].iov_base, "HTTP_HOST", wsgi_req->hvec[i].iov_len)==0 ||
+				strncmp(wsgi_req->hvec[i].iov_base, "REMOTE_ADDR", wsgi_req->hvec[i].iov_len)==0 ||
+				strncmp(wsgi_req->hvec[i].iov_base, "REMOTE_PORT", wsgi_req->hvec[i].iov_len)==0
+				) {
+              if (logfirst) {
+            	  uwsgi_log("%.*s=%.*s", wsgi_req->hvec[i].iov_len, wsgi_req->hvec[i].iov_base, wsgi_req->hvec[i+1].iov_len, wsgi_req->hvec[i+1].iov_base);
+              }
+              else {
+            	  uwsgi_lograw(" %.*s=%.*s", wsgi_req->hvec[i].iov_len, wsgi_req->hvec[i].iov_base, wsgi_req->hvec[i+1].iov_len, wsgi_req->hvec[i+1].iov_base);
+              }
+              logfirst=0;
+        	}
+
 #endif
 #ifdef PYTHREE
                 pydictkey = PyUnicode_DecodeLatin1(wsgi_req->hvec[i].iov_base, wsgi_req->hvec[i].iov_len, NULL);
@@ -137,12 +154,15 @@ void *uwsgi_request_subhandler_wsgi(struct wsgi_request *wsgi_req, struct uwsgi_
 #endif
 
 #ifdef UWSGI_DEBUG
-		uwsgi_log("%p %d %p %d\n", pydictkey, wsgi_req->hvec[i].iov_len, pydictvalue, wsgi_req->hvec[i + 1].iov_len);
+//		uwsgi_log("%p %d %p %d\n", pydictkey, wsgi_req->hvec[i].iov_len, pydictvalue, wsgi_req->hvec[i + 1].iov_len);
 #endif
                 PyDict_SetItem(wsgi_req->async_environ, pydictkey, pydictvalue);
                 Py_DECREF(pydictkey);
-		Py_DECREF(pydictvalue);
+                Py_DECREF(pydictvalue);
         }
+#ifdef UWSGI_DEBUG
+ 		uwsgi_lograw("\n");
+#endif
 
         if (wsgi_req->uh->modifier1 == UWSGI_MODIFIER_MANAGE_PATH_INFO) {
                 wsgi_req->uh->modifier1 = python_plugin.modifier1;
@@ -284,9 +304,9 @@ int uwsgi_response_subhandler_wsgi(struct wsgi_request *wsgi_req) {
 
 	if (!pychunk) {
 exception:
-		if (PyErr_Occurred()) { 
+		if (PyErr_Occurred()) {
 			uwsgi_manage_exception(wsgi_req, uwsgi.catch_exceptions);
-		}	
+		}
 		goto clear;
 	}
 

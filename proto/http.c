@@ -185,13 +185,12 @@ static int http_parse(struct wsgi_request *wsgi_req, char *watermark) {
 	uint16_t proxy_dst_len = 0;
 	uint16_t proxy_src_port_len = 0;
 	uint16_t proxy_dst_port_len = 0;
-
 	if (uwsgi.enable_proxy_protocol) {
 		ptr = proxy1_parse(ptr, watermark, &proxy_src, &proxy_src_len, &proxy_dst, &proxy_dst_len, &proxy_src_port, &proxy_src_port_len, &proxy_dst_port, &proxy_dst_port_len);
 		base = ptr;
 	}
 
-	// REQUEST_METHOD 
+	// REQUEST_METHOD
 	while (ptr < watermark) {
 		if (*ptr == ' ') {
 			wsgi_req->uh->pktsize += proto_base_add_uwsgi_var(wsgi_req, "REQUEST_METHOD", 14, base, ptr - base);
@@ -220,7 +219,7 @@ static int http_parse(struct wsgi_request *wsgi_req, char *watermark) {
 		}
 		else if (*ptr == ' ') {
 			wsgi_req->uh->pktsize += proto_base_add_uwsgi_var(wsgi_req, "REQUEST_URI", 11, base, ptr - base);
-			
+
 			if (!query_string) {
 				if (watermark + (ptr - base) < (char *)(wsgi_req->proto_parser_buf + uwsgi.buffer_size)) {
                                 	uint16_t path_info_len = ptr - base;
@@ -263,7 +262,7 @@ static int http_parse(struct wsgi_request *wsgi_req, char *watermark) {
 	if (!uwsgi.manage_script_name) {
 		wsgi_req->uh->pktsize += proto_base_add_uwsgi_var(wsgi_req, "SCRIPT_NAME", 11, "", 0);
 	}
-	
+
 
 	// SERVER_NAME
 	wsgi_req->uh->pktsize += proto_base_add_uwsgi_var(wsgi_req, "SERVER_NAME", 11, uwsgi.hostname, uwsgi.hostname_len);
@@ -379,7 +378,7 @@ static int http_parse(struct wsgi_request *wsgi_req, char *watermark) {
 			}
 			usl = uwsgi_string_list_has_item(headers, base, key_len);
 			// there is already a HTTP header with the same name, let's merge them
-			if (usl) {	
+			if (usl) {
 				char *old_value = usl->custom_ptr;
 				usl->custom_ptr = uwsgi_concat3n(old_value, (size_t) usl->custom, ", ", 2, value, value_len);
 				usl->custom += 2 + value_len;
@@ -741,7 +740,7 @@ int uwsgi_is_full_http(struct uwsgi_buffer *ub) {
 			default:
 				status = 0;
 				break;
-			
+
 		}
 	}
 
