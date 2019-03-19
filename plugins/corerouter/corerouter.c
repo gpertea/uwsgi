@@ -849,7 +849,7 @@ void uwsgi_corerouter_loop(int id, void *data) {
 									ugs->name_len, ugs->name);
 							break;
 						}
-						uwsgi_log("[GEODBG>>> [gw:%d event]  >> allocated new session %x for client %s:%s",
+						uwsgi_log("[GEODBG>>> [gw:%d event]  >> allocated new session %x for client %s:%s\n",
 								id, cr, cr->client_address, cr->client_port);
 					}
 					else if (ugs->subscription) {
