@@ -30,8 +30,8 @@ struct corerouter_peer *uwsgi_cr_peer_find_by_sid(struct corerouter_session *cs,
 
 // add a new peer to the session
 struct corerouter_peer *uwsgi_cr_peer_add(struct corerouter_session *cs) {
-	struct corerouter_peer *old_peers = NULL, *peers = cs->peers; 
-	
+	struct corerouter_peer *old_peers = NULL, *peers = cs->peers;
+
 	while(peers) {
 		old_peers = peers;
 		peers = peers->next;
@@ -66,7 +66,7 @@ void uwsgi_cr_peer_reset(struct corerouter_peer *peer) {
 		peer->tmp_socket_name = NULL;
 	}
 	cr_del_timeout(peer->session->corerouter, peer);
-	
+
 	if (peer->fd != -1) {
 		close(peer->fd);
 		peer->session->corerouter->cr_table[peer->fd] = NULL;
@@ -321,7 +321,7 @@ void corerouter_manage_subscription(char *key, uint16_t keylen, char *val, uint1
 void corerouter_close_peer(struct uwsgi_corerouter *ucr, struct corerouter_peer *peer) {
 	struct corerouter_session *cs = peer->session;
 
-	
+
 	// manage subscription reference count
 	if (ucr->subscriptions && peer->un && peer->un->len > 0) {
                 // decrease reference count
@@ -374,7 +374,7 @@ void corerouter_close_peer(struct uwsgi_corerouter *ucr, struct corerouter_peer 
 		if (!peer->can_retry) goto end;
 		if (peer->retries >= (size_t) ucr->max_retries) goto end;
 
-		peer->retries++;	
+		peer->retries++;
 		// reset the peer
 		uwsgi_cr_peer_reset(peer);
 		// set new timeout
@@ -529,7 +529,7 @@ int uwsgi_cr_set_hooks(struct corerouter_peer *peer, ssize_t (*read_hook)(struct
 	int has_write = 0;
 
 	if (peer->hook_read) {
-		has_read = 1;	
+		has_read = 1;
 	}
 
 	if (peer->hook_write) {
@@ -808,7 +808,7 @@ void uwsgi_corerouter_loop(int id, void *data) {
 		if (nevents == 0) {
 			corerouter_expire_timeouts(ucr, now);
 		}
-
+		uwsgi_log("[GEODBG>>> [gw:%d event loop] %d events detected (%.*s name=%s)\n", id, nevents, ucr->base_len, ucr->base, ucr->name);
 		for (i = 0; i < nevents; i++) {
 
 			// get the interesting fd
@@ -818,10 +818,13 @@ void uwsgi_corerouter_loop(int id, void *data) {
 
 			// check if the ucr->interesting_fd matches a gateway socket
 			struct uwsgi_gateway_socket *ugs = uwsgi.gateway_sockets;
+			uwsgi_log("[GEODBG>>> [gw:%d event] interesting_fd=%d\n", id, ucr->interesting_fd);
 			int taken = 0;
 			while (ugs) {
-				if (ugs->gateway == &ushared->gateways[id] && ucr->interesting_fd == ugs->fd) {
+				if (ugs->gateway == &uwsgi.shared->gateways[id] && ucr->interesting_fd == ugs->fd) {
+					uwsgi_log("[GEODBG>>> [gw:%d event] matched gateway %.*s with fd %d\n", id, ugs->name_len, ugs->name, ugs->fd);
 					if (!ugs->subscription) {
+						uwsgi_log("[GEODBG>>> [gw:%d event]  >> accept connection on fd %d\n", id, ucr->interesting_fd);
 #if defined(__linux__) && defined(SOCK_NONBLOCK) && !defined(OBSOLETE_LINUX_KERNEL)
 						new_connection = accept4(ucr->interesting_fd, (struct sockaddr *) &cr_addr, &cr_addr_len, SOCK_NONBLOCK);
 						if (new_connection < 0) {
@@ -841,9 +844,17 @@ void uwsgi_corerouter_loop(int id, void *data) {
 #endif
 						struct corerouter_session *cr = corerouter_alloc_session(ucr, ugs, new_connection, (struct sockaddr *) &cr_addr, cr_addr_len);
 						//something wrong in the allocation
-						if (!cr) break;
+						if (!cr) {
+							uwsgi_log("[GEODBG>>> [gw:%d event]  >> Error at corerouter_alloc_session for ugs %.*s!\n", id,
+									ugs->name_len, ugs->name);
+							break;
+						}
+						uwsgi_log("[GEODBG>>> [gw:%d event]  >> allocated new session %x for client %s:%s",
+								id, cr, cr->client_address, cr->client_port);
 					}
 					else if (ugs->subscription) {
+						uwsgi_log("[GEODBG>>> [gw:%d event]  >> gateway %.*s subscription already exists for ucr %s, managing it\n", id,
+								ugs->name_len, ugs->name, ucr->name);
 						uwsgi_corerouter_manage_subscription(ucr, id, ugs);
 					}
 
@@ -889,10 +900,10 @@ void uwsgi_corerouter_loop(int id, void *data) {
 
 				// call event hook
 				if (event_queue_interesting_fd_is_read(events, i)) {
-					hook = peer->hook_read;	
+					hook = peer->hook_read;
 				}
 				else if (event_queue_interesting_fd_is_write(events, i)) {
-					hook = peer->hook_write;	
+					hook = peer->hook_write;
 				}
 
 				if (!hook) continue;
@@ -911,7 +922,7 @@ void uwsgi_corerouter_loop(int id, void *data) {
 					corerouter_close_peer(ucr, peer);
 					continue;
 				}
-				
+
 			}
 		}
 	}
@@ -934,7 +945,7 @@ int uwsgi_corerouter_has_backends(struct uwsgi_corerouter *ucr) {
                         return 1;
                 }
 
-	
+
 	return 0;
 
 }
@@ -955,7 +966,7 @@ int uwsgi_corerouter_init(struct uwsgi_corerouter *ucr) {
 
 		if (!ucr->max_retries)
 			ucr->max_retries = 3;
-	
+
 
 		ucr->has_backends = uwsgi_corerouter_has_backends(ucr);
 
@@ -1128,7 +1139,7 @@ void corerouter_send_stats(struct uwsgi_corerouter *ucr) {
 			if (uwsgi_stats_comma(us)) goto end0;
 	}
 
-	if (uwsgi_stats_keylong(us, "cheap", (unsigned long long) ucr->i_am_cheap)) goto end0;	
+	if (uwsgi_stats_keylong(us, "cheap", (unsigned long long) ucr->i_am_cheap)) goto end0;
 
 	if (uwsgi_stats_object_close(us)) goto end0;
 

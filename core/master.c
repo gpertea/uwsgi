@@ -22,7 +22,7 @@ void uwsgi_update_load_counters() {
 
 	if (busy_workers >= (uint64_t) uwsgi.numproc) {
 		ushared->overloaded++;
-	
+
 		if (uwsgi.vassal_sos) {
 			if (uwsgi.current_time - last_sos > uwsgi.vassal_sos) {
                         	uwsgi_log_verbose("asking Emperor for reinforcements (overload: %llu)...\n", (unsigned long long) ushared->overloaded);
@@ -302,7 +302,7 @@ static void master_check_listen_queue() {
 void vassal_sos() {
 	if (!uwsgi.has_emperor) {
 		uwsgi_log("[broodlord] instance not governed by an Emperor !!!\n");
-		return;	
+		return;
 	}
 	char byte = 30;
         if (write(uwsgi.emperor_fd, &byte, 1) != 1) {

@@ -63,14 +63,15 @@ void gateway_respawn(int id) {
 
 	if (uwsgi.master_process)
 		uwsgi.shared->gateways_harakiri[id] = 0;
-
+    uwsgi_log("[GEODBG>>> gateway_respawn(%d): (out of %d gateways) \n", id, uwsgi.shared->gateways_cnt);
+	uwsgi_log("[GEODBG>>>    Forking %s\n", ug->fullname);
 	gw_pid = uwsgi_fork(ug->fullname);
 	if (gw_pid < 0) {
 		uwsgi_error("fork()");
 		return;
 	}
 
-	if (gw_pid == 0) {
+	if (gw_pid == 0) { //child process
 		uwsgi_fixup_fds(0, 0, ug);
 		uwsgi_close_all_unshared_sockets();
 		if (uwsgi.master_as_root)
@@ -109,8 +110,9 @@ void gateway_respawn(int id) {
 				exit(1);
 			}
 		}
-
+		uwsgi_log("[GEODBG>>>      gateway_respawn(%d): starting event loop\n",id);
 		ug->loop(id, ug->data);
+		uwsgi_log("[GEODBG>>>      !gateway_respawn(%d): after loop !!! (should never get here!)\n",id);
 		// never here !!! (i hope)
 		exit(1);
 	}
