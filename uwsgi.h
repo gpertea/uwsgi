@@ -4324,6 +4324,7 @@ struct uwsgi_thread {
 	uint64_t custom1;
 	uint64_t custom2;
 	uint64_t custom3;
+	int geo_thread_id; //geomod, for keeping track of threads
 	// linked list for offloaded requests
 	struct uwsgi_offload_request *offload_requests_head;
 	struct uwsgi_offload_request *offload_requests_tail;

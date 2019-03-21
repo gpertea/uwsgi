@@ -3384,6 +3384,8 @@ int uwsgi_run() {
 				uwsgi.offload_threads = i;
 				break;
 			}
+			//geomod for debugging:
+			uwsgi.offload_thread[i]->geo_thread_id=i;
 		}
 		uwsgi_log("spawned %d offload threads for uWSGI worker %d\n", uwsgi.offload_threads, uwsgi.mywid);
 	}

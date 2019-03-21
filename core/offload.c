@@ -277,8 +277,15 @@ static void uwsgi_offload_loop(struct uwsgi_thread *ut) {
 	for (;;) {
 		// TODO make timeout tunable
 		int nevents = event_queue_wait_multi(ut->queue, -1, events, uwsgi.offload_threads_events);
+#ifdef UWSGI_DEBUG
+		uwsgi_log("[GEODBG>>>> thread[%d] got %d events\n", ut->geo_thread_id);
+#endif
 		for (i = 0; i < nevents; i++) {
 			int interesting_fd = event_queue_interesting_fd(events, i);
+#ifdef UWSGI_DEBUG
+			uwsgi_log("[GEODBG>>>> thread[%d] -- processing interesting_fd=%d\n",
+					ut->geo_thread_id, interesting_fd);
+#endif
 			if (interesting_fd == ut->pipe[1]) {
 				struct uwsgi_offload_request *uor = uwsgi_malloc(sizeof(struct uwsgi_offload_request));
 				ssize_t len = read(ut->pipe[1], uor, sizeof(struct uwsgi_offload_request));

@@ -314,7 +314,9 @@ static int uwsgi_proto_check_11(struct wsgi_request *wsgi_req, char *key, char *
 		wsgi_req->script_name_len = len;
 		wsgi_req->script_name_pos = wsgi_req->var_cnt + 1;
 #ifdef UWSGI_DEBUG
-		uwsgi_debug("SCRIPT_NAME=%.*s\n", wsgi_req->script_name_len, wsgi_req->script_name);
+		//geomod
+		if (wsgi_req->script_name_len>0)
+			uwsgi_debug("SCRIPT_NAME=%.*s\n", wsgi_req->script_name_len, wsgi_req->script_name);
 #endif
 		return 0;
 	}
@@ -322,6 +324,11 @@ static int uwsgi_proto_check_11(struct wsgi_request *wsgi_req, char *key, char *
 	if (!uwsgi_proto_key("REQUEST_URI", 11)) {
 		wsgi_req->uri = buf;
 		wsgi_req->uri_len = len;
+#ifdef UWSGI_DEBUG
+		//geomod
+		if (wsgi_req->uri_len>0)
+			uwsgi_debug("REQUEST_URI=%.*s\n", wsgi_req->uri_len, wsgi_req->uri);
+#endif
 		return 0;
 	}
 
@@ -334,15 +341,20 @@ static int uwsgi_proto_check_11(struct wsgi_request *wsgi_req, char *key, char *
 	if (wsgi_req->host_len == 0 && !uwsgi_proto_key("SERVER_NAME", 11)) {
 		wsgi_req->host = buf;
 		wsgi_req->host_len = len;
-#ifdef UWSGI_DEBUG
-		uwsgi_debug("SERVER_NAME=%.*s\n", wsgi_req->host_len, wsgi_req->host);
-#endif
+//#ifdef UWSGI_DEBUG
+		//uwsgi_debug("SERVER_NAME=%.*s\n", wsgi_req->host_len, wsgi_req->host);
+//#endif
 		return 0;
 	}
 
 	if (wsgi_req->remote_addr_len == 0 && !uwsgi_proto_key("REMOTE_ADDR", 11)) {
 		wsgi_req->remote_addr = buf;
-                wsgi_req->remote_addr_len = len;
+        wsgi_req->remote_addr_len = len;
+		//geomod
+#ifdef UWSGI_DEBUG
+		if (wsgi_req->remote_addr_len>0)
+			uwsgi_debug("REMOTE_ADDR=%.*s\n", wsgi_req->remote_addr_len, wsgi_req->remote_addr);
+#endif
 		return 0;
 	}
 

@@ -127,7 +127,7 @@ void *uwsgi_request_subhandler_wsgi(struct wsgi_request *wsgi_req, struct uwsgi_
 	//char  *_request_method=NULL, *_request_uri=NULL, *_http_host=NULL,
 	//	*_remote_addr=NULL, *_remote_port=NULL;
     int logfirst=1;
-        for (i = 0; i < wsgi_req->var_cnt; i += 2) {
+    for (i = 0; i < wsgi_req->var_cnt; i += 2) {
 #ifdef UWSGI_DEBUG
         	if (strncmp(wsgi_req->hvec[i].iov_base, "REQUEST_METHOD", wsgi_req->hvec[i].iov_len)==0 ||
         		strncmp(wsgi_req->hvec[i].iov_base, "REQUEST_URI", wsgi_req->hvec[i].iov_len)==0 ||

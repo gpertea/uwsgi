@@ -360,26 +360,37 @@ int master_loop(char **argv, char **environ) {
 
 	/* route signals to workers... */
 #ifdef UWSGI_DEBUG
-	uwsgi_log("adding %d to signal poll\n", uwsgi.shared->worker_signal_pipe[0]);
+	uwsgi_log("[GEODBG>>> [master] adding shared worker signal pipe[0] %d to signal poll\n", uwsgi.shared->worker_signal_pipe[0]);
 #endif
 	event_queue_add_fd_read(uwsgi.master_queue, uwsgi.shared->worker_signal_pipe[0]);
 
 	if (uwsgi.master_fifo) {
 		uwsgi.master_fifo_fd = uwsgi_master_fifo();
+#ifdef UWSGI_DEBUG
+	     uwsgi_log("[GEODBG>>> [master] adding master_fifo %d to signal poll\n", uwsgi.master_fifo_fd);
+#endif
 		event_queue_add_fd_read(uwsgi.master_queue, uwsgi.master_fifo_fd);
 	}
 
 	if (uwsgi.notify_socket) {
 		uwsgi.notify_socket_fd = bind_to_unix_dgram(uwsgi.notify_socket);
-		uwsgi_log("notification socket enabled on %s (fd: %d)\n", uwsgi.notify_socket, uwsgi.notify_socket_fd);
+		uwsgi_log("[master] notification socket enabled on %s (fd: %d)\n", uwsgi.notify_socket, uwsgi.notify_socket_fd);
 		event_queue_add_fd_read(uwsgi.master_queue, uwsgi.notify_socket_fd);
 	}
 
 	if (uwsgi.spoolers) {
+
+#ifdef UWSGI_DEBUG
+	     uwsgi_log("[GEODBG>>> [master] adding spooler_signal_pipe %d to signal poll\n", uwsgi.shared->spooler_signal_pipe[0]);
+#endif
+
 		event_queue_add_fd_read(uwsgi.master_queue, uwsgi.shared->spooler_signal_pipe[0]);
 	}
 
 	if (uwsgi.mules_cnt > 0) {
+#ifdef UWSGI_DEBUG
+	     uwsgi_log("[GEODBG>>> [master] adding mule_signal_pipe %d to signal poll\n", uwsgi.shared->mule_signal_pipe[0]);
+#endif
 		event_queue_add_fd_read(uwsgi.master_queue, uwsgi.shared->mule_signal_pipe[0]);
 	}
 
@@ -387,7 +398,7 @@ int master_loop(char **argv, char **environ) {
 		uwsgi.log_master_buf = uwsgi_malloc(uwsgi.log_master_bufsize);
 		if (!uwsgi.threaded_logger) {
 #ifdef UWSGI_DEBUG
-			uwsgi_log("adding %d to master logging\n", uwsgi.shared->worker_log_pipe[0]);
+			uwsgi_log("adding worker_log_pipe %d to master logging\n", uwsgi.shared->worker_log_pipe[0]);
 #endif
 			event_queue_add_fd_read(uwsgi.master_queue, uwsgi.shared->worker_log_pipe[0]);
 			if (uwsgi.req_log_master) {
@@ -435,6 +446,10 @@ int master_loop(char **argv, char **environ) {
                 	uwsgi_error("[setns-socket] chmod()");
                         exit(1);
                 }
+
+#ifdef UWSGI_DEBUG
+	     uwsgi_log("[GEODBG>>> [master] adding setns_socket_fd %d to master queue\n", uwsgi.setns_socket_fd);
+#endif
                 event_queue_add_fd_read(uwsgi.master_queue, uwsgi.setns_socket_fd);
 	}
 #endif
@@ -459,7 +474,7 @@ int master_loop(char **argv, char **environ) {
 		}
 
 		event_queue_add_fd_read(uwsgi.master_queue, uwsgi.stats_fd);
-		uwsgi_log("*** Stats server enabled on %s fd: %d ***\n", uwsgi.stats, uwsgi.stats_fd);
+		uwsgi_log(" [master] Stats server enabled on %s fd: %d ***\n", uwsgi.stats, uwsgi.stats_fd);
 	}
 
 

@@ -1674,9 +1674,11 @@ int uwsgi_get_app_id(struct wsgi_request *wsgi_req, char *key, uint16_t key_len,
 	for (i = 0; i < uwsgi_apps_cnt; i++) {
 		// reset check
 		found = 0;
+/*
 #ifdef UWSGI_DEBUG
 		uwsgi_log("searching for %.*s in %.*s %p\n", app_name_len, app_name, uwsgi_apps[i].mountpoint_len, uwsgi_apps[i].mountpoint, uwsgi_apps[i].callable);
 #endif
+*/
 		if (!uwsgi_apps[i].callable) {
 			continue;
 		}

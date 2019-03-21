@@ -673,9 +673,13 @@ void uwsgi_corerouter_loop(int id, void *data) {
 
 	void *events = uwsgi_corerouter_setup_event_queue(ucr, id);
 
-	if (ucr->has_subscription_sockets)
+	if (ucr->has_subscription_sockets) {
+#ifdef UWSGI_DEBUG
+	     uwsgi_log("[GEODBG>> [corerouter] adding gateway[%d] subscription pipe fd %d ucr %s event queue\n",
+	    		 id, ushared->gateways[id].internal_subscription_pipe[1], ucr->name);
+#endif
 		event_queue_add_fd_read(ucr->queue, ushared->gateways[id].internal_subscription_pipe[1]);
-
+	}
 
 	if (!ucr->socket_timeout)
 		ucr->socket_timeout = 60;
@@ -743,35 +747,35 @@ void uwsgi_corerouter_loop(int id, void *data) {
 
 	ucr->mapper = uwsgi_cr_map_use_void;
 
-			if (ucr->use_cache) {
-				ucr->cache = uwsgi_cache_by_name(ucr->use_cache);
-				if (!ucr->cache) {
-					uwsgi_log("!!! unable to find cache \"%s\" !!!\n", ucr->use_cache);
-					exit(1);
-				}
-                        	ucr->mapper = uwsgi_cr_map_use_cache;
-                        }
-                        else if (ucr->pattern) {
-                                ucr->mapper = uwsgi_cr_map_use_pattern;
-                        }
-                        else if (ucr->has_subscription_sockets) {
-                                ucr->mapper = uwsgi_cr_map_use_subscription;
-				if (uwsgi.subscription_dotsplit) {
-                                	ucr->mapper = uwsgi_cr_map_use_subscription_dotsplit;
-				}
-                        }
-                        else if (ucr->base) {
-                                ucr->mapper = uwsgi_cr_map_use_base;
-                        }
-                        else if (ucr->code_string_code && ucr->code_string_function) {
-                                ucr->mapper = uwsgi_cr_map_use_cs;
-			}
-                        else if (ucr->to_socket) {
-                                ucr->mapper = uwsgi_cr_map_use_to;
-                        }
-                        else if (ucr->static_nodes) {
-                                ucr->mapper = uwsgi_cr_map_use_static_nodes;
-                        }
+	if (ucr->use_cache) {
+	    ucr->cache = uwsgi_cache_by_name(ucr->use_cache);
+		if (!ucr->cache) {
+			uwsgi_log("!!! unable to find cache \"%s\" !!!\n", ucr->use_cache);
+			exit(1);
+		}
+        ucr->mapper = uwsgi_cr_map_use_cache;
+    }
+    else if (ucr->pattern) {
+        ucr->mapper = uwsgi_cr_map_use_pattern;
+    }
+    else if (ucr->has_subscription_sockets) {
+        ucr->mapper = uwsgi_cr_map_use_subscription;
+	    if (uwsgi.subscription_dotsplit) {
+      	   ucr->mapper = uwsgi_cr_map_use_subscription_dotsplit;
+	   }
+    }
+    else if (ucr->base) {
+        ucr->mapper = uwsgi_cr_map_use_base;
+    }
+     else if (ucr->code_string_code && ucr->code_string_function) {
+          ucr->mapper = uwsgi_cr_map_use_cs;
+	 }
+     else if (ucr->to_socket) {
+         ucr->mapper = uwsgi_cr_map_use_to;
+     }
+      else if (ucr->static_nodes) {
+           ucr->mapper = uwsgi_cr_map_use_static_nodes;
+      }
 
 	ucr->timeouts = uwsgi_init_rb_timer();
 

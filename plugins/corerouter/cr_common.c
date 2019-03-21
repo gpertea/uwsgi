@@ -101,6 +101,11 @@ void *uwsgi_corerouter_setup_event_queue(struct uwsgi_corerouter *ucr, int id) {
 	while (ugs) {
 		if (!strcmp(ucr->name, ugs->owner)) {
 			if (!ucr->cheap || ugs->subscription) {
+#ifdef UWSGI_DEBUG
+	     uwsgi_log("[GEODBG>> [corerouter] adding fd %d (of ugs %.*s [%x]) to ucr %s event queue\n",
+	    		 ugs->fd, ugs->name_len, ugs->name, (void*)ugs, ucr->name);
+#endif
+
 				event_queue_add_fd_read(ucr->queue, ugs->fd);
 			}
 			ugs->gateway = &ushared->gateways[id];
@@ -148,7 +153,7 @@ void uwsgi_corerouter_manage_subscription(struct uwsgi_corerouter *ucr, int id, 
 				uwsgi_log("[%s pid %d] leaving cheap mode...\n", ucr->name, (int) uwsgi.mypid);
 			}
 		}
-		//unsubscribe 
+		//unsubscribe
 		else {
 			struct uwsgi_subscribe_node *node = uwsgi_get_subscribe_node_by_name(ucr->subscriptions, usr.key, usr.keylen, usr.address, usr.address_len);
 			if (node && node->len) {
@@ -212,7 +217,7 @@ void uwsgi_corerouter_manage_subscription(struct uwsgi_corerouter *ucr, int id, 
 			if (usr.sni_ca_len) {
 				sni_ca = uwsgi_concat2n(usr.sni_ca, usr.sni_ca_len, "", 0);
 			}
-			uwsgi_foreach(usl, ucr->resubscribe) {	
+			uwsgi_foreach(usl, ucr->resubscribe) {
 				if (ucr->resubscribe_bind) {
 					static int rfd = -1;
 					if (rfd == -1) {
@@ -257,7 +262,7 @@ void uwsgi_corerouter_manage_internal_subscription(struct uwsgi_corerouter *ucr,
 				uwsgi_log("[%s pid %d] leaving cheap mode...\n", ucr->name, (int) uwsgi.mypid);
 			}
 		}
-		//unsubscribe 
+		//unsubscribe
 		else {
 			struct uwsgi_subscribe_node *node = uwsgi_get_subscribe_node_by_name(ucr->subscriptions, usr.key, usr.keylen, usr.address, usr.address_len);
 			if (node && node->len) {
