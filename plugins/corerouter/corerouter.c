@@ -494,7 +494,7 @@ int uwsgi_cr_set_hooks(struct corerouter_peer *peer, ssize_t (*read_hook)(struct
 	struct corerouter_session *cs = peer->session;
 	struct uwsgi_corerouter *ucr = cs->corerouter;
 
-	//uwsgi_log("uwsgi_cr_set_hooks(%d, %p, %p)\n", peer->fd, read_hook, write_hook);
+	uwsgi_log("[GEODBG>> [corerouter] uwsgi_cr_set_hooks(%d, %p, %p)\n", peer->fd, read_hook, write_hook);
 
 	if (read_hook) {
 		peer->last_hook_read = read_hook;
@@ -853,8 +853,8 @@ void uwsgi_corerouter_loop(int id, void *data) {
 									ugs->name_len, ugs->name);
 							break;
 						}
-						uwsgi_log("[GEODBG>>> [gw:%d event]  >> allocated new session %x for client %s:%s\n",
-								id, cr, cr->client_address, cr->client_port);
+						uwsgi_log("[GEODBG>>> [gw:%d event]  >> allocated new session %x for client %s:%s, socket fd %d\n",
+								id, cr, cr->client_address, cr->client_port, new_connection);
 					}
 					else if (ugs->subscription) {
 						uwsgi_log("[GEODBG>>> [gw:%d event]  >> gateway %.*s subscription already exists for ucr %s, managing it\n", id,

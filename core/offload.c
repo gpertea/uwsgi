@@ -308,6 +308,11 @@ static void uwsgi_offload_loop(struct uwsgi_thread *ut) {
 			if (!uor)
 				continue;
 			// run the hook
+#ifdef UWSGI_DEBUG
+			uwsgi_log("[GEODBG>>>> thread[%d] -- run the uor hook engine->event_func\n",
+					ut->geo_thread_id);
+#endif
+
 			if (uor->engine->event_func(ut, uor, interesting_fd)) {
 				uwsgi_offload_close(ut, uor);
 			}
