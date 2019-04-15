@@ -101,10 +101,9 @@ void *uwsgi_corerouter_setup_event_queue(struct uwsgi_corerouter *ucr, int id) {
 	while (ugs) {
 		if (!strcmp(ucr->name, ugs->owner)) {
 			if (!ucr->cheap || ugs->subscription) {
-#ifdef UWSGI_DEBUG
-	     uwsgi_log("[GEODBG>> [corerouter] adding fd %d (of ugs %.*s [%x]) to ucr %s event queue\n",
+
+	     GEO_DBG("[cr_common] adding fd %d (of ugs %.*s [%x]) to ucr %s event queue\n",
 	    		 ugs->fd, ugs->name_len, ugs->name, (void*)ugs, ucr->name);
-#endif
 
 				event_queue_add_fd_read(ucr->queue, ugs->fd);
 			}
@@ -132,6 +131,9 @@ void uwsgi_corerouter_manage_subscription(struct uwsgi_corerouter *ucr, int id, 
 		len = recv(ugs->fd, bbuf, 4096, 0);
 	}
 	if (len > 0) {
+#ifdef UWSGI_DEBUG
+		geo_dbg_checkread(ugs->fd, bbuf, len);
+#endif
 		uwsgi_hooked_parse(bbuf + 4, len - 4, corerouter_manage_subscription, &usr);
 		if (usr.sign_len > 0) {
 			// calc the base size
@@ -245,6 +247,9 @@ void uwsgi_corerouter_manage_internal_subscription(struct uwsgi_corerouter *ucr,
 
 	ssize_t len = recv(fd, bbuf, 4096, 0);
 	if (len > 0) {
+#ifdef UWSGI_DEBUG
+		geo_dbg_checkread(fd, bbuf, len);
+#endif
 		memset(&usr, 0, sizeof(struct uwsgi_subscribe_req));
 		uwsgi_hooked_parse(bbuf + 4, len - 4, corerouter_manage_subscription, &usr);
 

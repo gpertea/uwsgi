@@ -758,6 +758,9 @@ class uConf(object):
 
         self.ldflags = os.environ.get("LDFLAGS", "").split()
         self.libs = ['-lpthread', '-lm', '-rdynamic']
+        ##-- geo_dbg geo mod:
+        self.libs.append('-lunwind')
+        ##--
         if uwsgi_os in ('Linux', 'GNU', 'GNU/kFreeBSD'):
             self.libs.append('-ldl')
         if uwsgi_os == 'GNU/kFreeBSD':
@@ -1346,7 +1349,7 @@ class uConf(object):
 
         if self.get('debug'):
             self.cflags.append("-DUWSGI_DEBUG")
-            self.cflags.append("-g")
+            self.cflags.append("-g -O0 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -fasynchronous-unwind-tables -rdynamic")
             report['debug'] = True
 
         if self.get('unbit'):

@@ -42,7 +42,7 @@ static int uwsgi_poll_fd_del(struct uwsgi_poll_event *upe, int fd) {
 	for(i=0;i<upe->nevents;i++) {
 		if (upe->poll[i].fd == fd) {
 			if (i < upe->nevents-1) {
-				memcpy(&upe->poll[i], &upe->poll[i+1], sizeof(struct uwsgi_poll_event) * (upe->nevents - (i+1))); 
+				memcpy(&upe->poll[i], &upe->poll[i+1], sizeof(struct uwsgi_poll_event) * (upe->nevents - (i+1)));
 			}
 			upe->nevents--;
 			return 0;
@@ -102,7 +102,7 @@ int event_queue_interesting_fd_is_read(void *events, int id) {
         struct pollfd *upoll = &pevents[id];
         if (upoll->revents & POLLIN) {
 		return 1;
-	}	
+	}
 	return 0;
 }
 
@@ -116,7 +116,7 @@ int event_queue_fd_write_to_readwrite(int eq, int fd) {
 			pthread_mutex_unlock(&upe->lock);
 			return 0;
 		}
-	}	
+	}
 	pthread_mutex_unlock(&upe->lock);
 	return -1;
 }
@@ -139,7 +139,7 @@ int event_queue_add_fd_read(int eq, int fd) {
 	pthread_mutex_lock(&upe->lock);
 	if (uwsgi_poll_fd_is_registered(upe, fd)) {
 		pthread_mutex_unlock(&upe->lock);
-		return 0;	
+		return 0;
 	}
 	int ret = uwsgi_poll_fd_add(upe, fd, POLLIN);
 	pthread_mutex_unlock(&upe->lock);
@@ -176,7 +176,7 @@ int event_queue_wait_multi(int eq, int timeout, void *events, int nevents) {
 				if (cnt >= nevents)
 					break;
 
-				struct pollfd *pevents = (struct pollfd *)events;	
+				struct pollfd *pevents = (struct pollfd *)events;
 				struct pollfd *upoll = &pevents[cnt];
 				upoll->fd = upe->poll[i].fd;
 				upoll->revents = upe->poll[i].revents;
@@ -212,7 +212,7 @@ int event_queue_fd_write_to_read(int eq, int fd) {
 			pthread_mutex_unlock(&upe->lock);
 			return 0;
 		}
-	}	
+	}
 	pthread_mutex_unlock(&upe->lock);
 	return -1;
 }
@@ -226,7 +226,7 @@ int event_queue_fd_read_to_write(int eq, int fd) {
 			pthread_mutex_unlock(&upe->lock);
 			return 0;
 		}
-	}	
+	}
 	pthread_mutex_unlock(&upe->lock);
 	return -1;
 }
@@ -405,7 +405,7 @@ int event_queue_wait_multi(int eq, int timeout, void *events, int nevents) {
 	int ret;
 	uint_t nget = 1;
 	timespec_t ts;
-	
+
 
 	if (timeout >= 0) {
 		ts.tv_sec = timeout;
@@ -519,7 +519,7 @@ int event_queue_add_fd_read(int eq, int fd) {
 	memset(&ee, 0, sizeof(struct epoll_event));
 	ee.events = EPOLLIN;
 	ee.data.fd = fd;
-
+    // GEO_DBGT("[event] adding read fd %d to event queue %d\n", fd, eq);
 	if (epoll_ctl(eq, EPOLL_CTL_ADD, fd, &ee)) {
 		uwsgi_error("epoll_ctl()");
 		return -1;
@@ -634,7 +634,7 @@ int event_queue_del_fd(int eq, int fd, int event) {
 	memset(&ee, 0, sizeof(struct epoll_event));
 	ee.data.fd = fd;
 	ee.events = event;
-
+    // GEO_DBGT("[event] delete fd %d from event queue %d\n", fd, eq);
 	if (epoll_ctl(eq, EPOLL_CTL_DEL, fd, &ee)) {
 		uwsgi_error("epoll_ctl()");
 		return -1;
@@ -707,7 +707,19 @@ int event_queue_wait_multi(int eq, int timeout, void *events, int nevents) {
 		if (errno != EINTR)
 			uwsgi_error("epoll_wait()");
 	}
-
+#ifdef UWSGI_DEBUG
+    if (ret>0) {
+    	int iev=0;
+    	for(int i=0;i<ret;i++) {
+    		if (((struct epoll_event *) events)[i].events & (EPOLLIN|EPOLLRDHUP|EPOLLPRI|EPOLLERR|EPOLLHUP)) {
+    			GEO_DBG("[event] input event detected in queue %d for fd %d\n", eq,
+    					((struct epoll_event *) events)[i].data.fd);
+    			iev++;
+    		}
+    	}
+    	if (iev>0) uwsgi_Gbacktrace();
+    }
+#endif
 	return ret;
 }
 
@@ -728,6 +740,10 @@ int event_queue_wait(int eq, int timeout, int *interesting_fd) {
 
 	if (ret > 0) {
 		*interesting_fd = ee.data.fd;
+#ifdef UWSGI_DEBUG
+		if (ee.events & (EPOLLIN|EPOLLRDHUP|EPOLLPRI|EPOLLERR|EPOLLHUP))
+  			GEO_DBGT("[event] input event detected in queue %d for fd %d\n", eq, ee.data.fd);
+#endif
 	}
 
 	return ret;

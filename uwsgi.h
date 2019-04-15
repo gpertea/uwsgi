@@ -29,6 +29,17 @@ extern "C" {
 #define uwsgi_req_error(x)  if (wsgi_req->uri_len > 0 && wsgi_req->method_len > 0 && wsgi_req->remote_addr_len > 0) uwsgi_log_verbose("%s: %s [%s line %d] during %.*s %.*s (%.*s)\n", x, strerror(errno), __FILE__, __LINE__,\
 		wsgi_req->method_len, wsgi_req->method, wsgi_req->uri_len, wsgi_req->uri, wsgi_req->remote_addr_len, wsgi_req->remote_addr); else uwsgi_log_verbose("%s %s [%s line %d] \n",x, strerror(errno), __FILE__, __LINE__);
 #define uwsgi_debug(x, ...) uwsgi_log("[uWSGI DEBUG] " x, __VA_ARGS__);
+// Geo mod:
+#ifdef UWSGI_DEBUG
+  #define GEO_DBG(x, ...) uwsgi_Glog(x, __VA_ARGS__);
+  #define GEO_DBGT(x, ...) { uwsgi_Glog(x, __VA_ARGS__); \
+                           uwsgi_Gbacktrace(); }
+#else
+  #define GEO_DBG(x, ...)
+  #define GEO_DBGT(x, ...)
+#endif
+// Geo mod end
+
 #define uwsgi_rawlog(x) if (write(2, x, strlen(x)) != strlen(x)) uwsgi_error("write()")
 #define uwsgi_str(x) uwsgi_concat2(x, (char *)"")
 
@@ -3212,7 +3223,15 @@ void env_to_arg(char *, char *);
 void parse_sys_envs(char **);
 
 void uwsgi_log(const char *, ...);
-void uwsgi_lograw(const char *, ...); //--geo
+
+//--Geo mod:
+#ifdef UWSGI_DEBUG
+void uwsgi_Glog(const char *, ...);
+void uwsgi_Gbacktrace();
+void geo_dbg_checkread(int fd, char* buf, int rlen);
+#endif
+
+void uwsgi_lograw(const char *, ...);
 void uwsgi_log_verbose(const char *, ...);
 void uwsgi_logfile_write(const char *, ...);
 

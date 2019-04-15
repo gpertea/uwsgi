@@ -277,18 +277,17 @@ static void uwsgi_offload_loop(struct uwsgi_thread *ut) {
 	for (;;) {
 		// TODO make timeout tunable
 		int nevents = event_queue_wait_multi(ut->queue, -1, events, uwsgi.offload_threads_events);
-#ifdef UWSGI_DEBUG
-		uwsgi_log("[GEODBG>>>> thread[%d] got %d events\n", ut->geo_thread_id);
-#endif
 		for (i = 0; i < nevents; i++) {
 			int interesting_fd = event_queue_interesting_fd(events, i);
-#ifdef UWSGI_DEBUG
-			uwsgi_log("[GEODBG>>>> thread[%d] -- processing interesting_fd=%d\n",
+
+			GEO_DBG("[offload] thread[%d] -- processing interesting_fd=%d\n",
 					ut->geo_thread_id, interesting_fd);
-#endif
+
 			if (interesting_fd == ut->pipe[1]) {
 				struct uwsgi_offload_request *uor = uwsgi_malloc(sizeof(struct uwsgi_offload_request));
 				ssize_t len = read(ut->pipe[1], uor, sizeof(struct uwsgi_offload_request));
+				GEO_DBG("[offload] thread[%d] -- read from ut->pipe[1] because it matches fd %d\n",
+						ut->geo_thread_id, interesting_fd);
 				if (len != sizeof(struct uwsgi_offload_request)) {
 					uwsgi_error("read()");
 					free(uor);
@@ -308,10 +307,8 @@ static void uwsgi_offload_loop(struct uwsgi_thread *ut) {
 			if (!uor)
 				continue;
 			// run the hook
-#ifdef UWSGI_DEBUG
-			uwsgi_log("[GEODBG>>>> thread[%d] -- run the uor hook engine->event_func\n",
-					ut->geo_thread_id);
-#endif
+			GEO_DBG("[offload] thread[%d] -- calling uor hook engine->event_func for fd %d\n",
+					ut->geo_thread_id, interesting_fd);
 
 			if (uor->engine->event_func(ut, uor, interesting_fd)) {
 				uwsgi_offload_close(ut, uor);
@@ -410,6 +407,8 @@ static int u_offload_sendfile_do(struct uwsgi_thread *ut, struct uwsgi_offload_r
 
 }
 
+
+
 /*
 
 	pipe offloading
@@ -436,6 +435,7 @@ static int u_offload_pipe_do(struct uwsgi_thread *ut, struct uwsgi_offload_reque
 			}
 			rlen = read(uor->fd, uor->buf, 4096);
 			if (rlen > 0) {
+				geo_dbg_checkread(uor->fd, uor->buf, rlen);
 				uor->to_write = rlen;
 				uor->pos = 0;
 				if (event_queue_del_fd(ut->queue, uor->fd, event_queue_read())) return -1;
@@ -537,6 +537,7 @@ static int u_offload_transfer_do(struct uwsgi_thread *ut, struct uwsgi_offload_r
 			if (fd == uor->fd) {
 				rlen = read(uor->fd, uor->buf, 4096);
 				if (rlen > 0) {
+					geo_dbg_checkread(uor->fd, uor->buf, rlen);
 					uor->to_write = rlen;
 					uor->pos = 0;
 					uwsgi_offload_0r_1w(uor->fd, uor->s)
@@ -551,6 +552,7 @@ static int u_offload_transfer_do(struct uwsgi_thread *ut, struct uwsgi_offload_r
 			else if (fd == uor->s) {
 				rlen = read(uor->s, uor->buf, 4096);
 				if (rlen > 0) {
+					geo_dbg_checkread(uor->fd, uor->buf, rlen);
 					uor->to_write = rlen;
 					uor->pos = 0;
 					uwsgi_offload_0r_1w(uor->s, uor->fd)

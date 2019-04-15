@@ -494,8 +494,6 @@ int uwsgi_cr_set_hooks(struct corerouter_peer *peer, ssize_t (*read_hook)(struct
 	struct corerouter_session *cs = peer->session;
 	struct uwsgi_corerouter *ucr = cs->corerouter;
 
-	uwsgi_log("[GEODBG>> [corerouter] uwsgi_cr_set_hooks(%d, %p, %p)\n", peer->fd, read_hook, write_hook);
-
 	if (read_hook) {
 		peer->last_hook_read = read_hook;
 	}
@@ -674,10 +672,6 @@ void uwsgi_corerouter_loop(int id, void *data) {
 	void *events = uwsgi_corerouter_setup_event_queue(ucr, id);
 
 	if (ucr->has_subscription_sockets) {
-#ifdef UWSGI_DEBUG
-	     uwsgi_log("[GEODBG>> [corerouter] adding gateway[%d] subscription pipe fd %d ucr %s event queue\n",
-	    		 id, ushared->gateways[id].internal_subscription_pipe[1], ucr->name);
-#endif
 		event_queue_add_fd_read(ucr->queue, ushared->gateways[id].internal_subscription_pipe[1]);
 	}
 
@@ -812,7 +806,6 @@ void uwsgi_corerouter_loop(int id, void *data) {
 		if (nevents == 0) {
 			corerouter_expire_timeouts(ucr, now);
 		}
-		uwsgi_log("[GEODBG>>> [gw:%d event loop] %d events detected (%.*s name=%s)\n", id, nevents, ucr->base_len, ucr->base, ucr->name);
 		for (i = 0; i < nevents; i++) {
 
 			// get the interesting fd
@@ -822,13 +815,11 @@ void uwsgi_corerouter_loop(int id, void *data) {
 
 			// check if the ucr->interesting_fd matches a gateway socket
 			struct uwsgi_gateway_socket *ugs = uwsgi.gateway_sockets;
-			uwsgi_log("[GEODBG>>> [gw:%d event] interesting_fd=%d\n", id, ucr->interesting_fd);
 			int taken = 0;
 			while (ugs) {
 				if (ugs->gateway == &uwsgi.shared->gateways[id] && ucr->interesting_fd == ugs->fd) {
-					uwsgi_log("[GEODBG>>> [gw:%d event] matched gateway %.*s with fd %d\n", id, ugs->name_len, ugs->name, ugs->fd);
+					GEO_DBG("[corerouter gw:%d event] matched gateway %.*s with i_fd %d\n", id, ugs->name_len, ugs->name, ugs->fd);
 					if (!ugs->subscription) {
-						uwsgi_log("[GEODBG>>> [gw:%d event]  >> accept connection on fd %d\n", id, ucr->interesting_fd);
 #if defined(__linux__) && defined(SOCK_NONBLOCK) && !defined(OBSOLETE_LINUX_KERNEL)
 						new_connection = accept4(ucr->interesting_fd, (struct sockaddr *) &cr_addr, &cr_addr_len, SOCK_NONBLOCK);
 						if (new_connection < 0) {
@@ -846,19 +837,18 @@ void uwsgi_corerouter_loop(int id, void *data) {
                                                 uwsgi_socket_nb(new_connection);
 #endif
 #endif
-						struct corerouter_session *cr = corerouter_alloc_session(ucr, ugs, new_connection, (struct sockaddr *) &cr_addr, cr_addr_len);
+                        GEO_DBG("[corerouter gw:%d event]  >> accepted new connection <%d> on i_fd %d\n", id, new_connection, ucr->interesting_fd);
+                        struct corerouter_session *cr = corerouter_alloc_session(ucr, ugs, new_connection, (struct sockaddr *) &cr_addr, cr_addr_len);
 						//something wrong in the allocation
 						if (!cr) {
-							uwsgi_log("[GEODBG>>> [gw:%d event]  >> Error at corerouter_alloc_session for ugs %.*s!\n", id,
+							GEO_DBG("[corerouter gw:%d event] Error at corerouter_alloc_session for ugs %.*s!\n", id,
 									ugs->name_len, ugs->name);
 							break;
 						}
-						uwsgi_log("[GEODBG>>> [gw:%d event]  >> allocated new session %x for client %s:%s, socket fd %d\n",
+						GEO_DBG("[corerouter gw:%d event] allocated new session %x for client %s:%s, socket fd %d\n",
 								id, cr, cr->client_address, cr->client_port, new_connection);
 					}
 					else if (ugs->subscription) {
-						uwsgi_log("[GEODBG>>> [gw:%d event]  >> gateway %.*s subscription already exists for ucr %s, managing it\n", id,
-								ugs->name_len, ugs->name, ucr->name);
 						uwsgi_corerouter_manage_subscription(ucr, id, ugs);
 					}
 

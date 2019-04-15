@@ -17,8 +17,16 @@
 #ifdef __DragonFly__
 #include <uwsgi.h>
 #endif
+// Geo mod: needed for uwsgi_Gbacktrace()
+#ifdef UWSGI_DEBUG
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+#endif
+// Geo mod end
 
 extern struct uwsgi_server uwsgi;
+
+//## -- geo_dbg Geo mod
 
 //use this instead of fprintf to avoid buffering mess with udp logging
 void uwsgi_log(const char *fmt, ...) {
@@ -75,6 +83,198 @@ void uwsgi_log(const char *fmt, ...) {
 	// do not check for errors
 	rlen = write(2, logpkt, rlen);
 }
+
+#ifdef UWSGI_DEBUG
+void uwsgi_Glog(const char *fmt, ...) {
+	va_list ap;
+	char logpkt[4096];
+	int rlen = 0;
+	int64_t pid;
+	int ret;
+	//--geo: enforce more compact strftime format
+	//struct timeval tv;
+	char sftime[64];
+	//char ctime_storage[26];
+	time_t now;
+	if (uwsgi.logdate) {
+		//if (uwsgi.log_strftime) {
+			now = uwsgi_now();
+			//rlen = strftime(sftime, 64, uwsgi.log_strftime, localtime(&now));
+			//--geo: enforce more compact strftime format
+			rlen = strftime(sftime, 64, "[%D %T]", localtime(&now));
+			memcpy(logpkt, sftime, rlen);
+			memcpy(logpkt + rlen, " - ", 3);
+			rlen += 3;
+		/*}
+		else {
+			gettimeofday(&tv, NULL);
+#if defined(__sun__) && !defined(__clang__)
+			ctime_r((const time_t *) &tv.tv_sec, ctime_storage, 26);
+#else
+			ctime_r((const time_t *) &tv.tv_sec, ctime_storage);
+#endif
+			memcpy(logpkt, ctime_storage, 24);
+			memcpy(logpkt + 24, " - ", 3);
+
+			rlen = 24 + 3;
+		}
+		*/
+	}
+
+	pid=(int64_t) getpid();
+	ret=sprintf(logpkt+rlen, "[GeoDBG>%ld> ", pid);
+	rlen+=ret;
+
+	va_start(ap, fmt);
+	ret = vsnprintf(logpkt + rlen, 4096 - rlen, fmt, ap);
+	va_end(ap);
+
+	if (ret >= 4096) {
+		char *tmp_buf = uwsgi_malloc(rlen + ret + 1);
+		memcpy(tmp_buf, logpkt, rlen);
+		va_start(ap, fmt);
+		ret = vsnprintf(tmp_buf + rlen, ret + 1, fmt, ap);
+		va_end(ap);
+		rlen = write(2, tmp_buf, rlen + ret);
+		free(tmp_buf);
+		return;
+	}
+
+	rlen += ret;
+	// do not check for errors
+	rlen = write(2, logpkt, rlen);
+}
+
+
+void uwsgi_Gbacktrace() {
+	  unw_cursor_t cursor;
+	  unw_context_t context;
+      char outbuf[512];
+      int level= 0;
+	  int rlen = 0;
+	  int l=0;
+	  long pid=(long) getpid();
+	  // Initialize cursor to current frame for local unwinding.
+	  unw_getcontext(&context);
+	  unw_init_local(&cursor, &context);
+
+	  // Unwind frames one by one, going up the frame stack.
+	  while (unw_step(&cursor) > 0) {
+	    unw_word_t offset, pc;
+	    unw_get_reg(&cursor, UNW_REG_IP, &pc);
+	    if (pc == 0) {
+	      break;
+	    }
+	    //printf("0x%lx:", pc);
+	    char sym[256];
+	    if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
+	      //printf(" (%s+0x%lx)\n", sym, offset);
+	    	if (strstr(sym, "__libc")!=NULL) break;
+	    	outbuf[0]=0;
+	    	rlen=strlen(sym);
+	 	    if (rlen>0) {
+	 	    	rlen=sprintf(outbuf, ">%ld>",pid);
+	 			for (l=0;l<level;l++) outbuf[rlen+l]=' ';
+	 			strcpy(outbuf+rlen+level, sym);
+	 	    }
+	    } else {
+	      //printf(" -- error: unable to obtain symbol name for this frame\n");
+	    	strcpy(outbuf, "[frame symbol name not available]");
+	    }
+    	rlen=strlen(outbuf);
+    	if (rlen>0) {
+	      outbuf[rlen]='\n';
+	      rlen++;
+	      write(2, outbuf, rlen);
+    	}
+	    level++;
+	  } //backtrace lines
+}
+/*
+void uwsgi_GCCbacktrace() {
+      char outbuf[4096];
+      //char syscom[1024];
+	  char lbuf[1024];
+	  int rlen = 0;
+	  int l=0;
+	  void *trace[24]; //24 - max depth of call stack
+	  char **messages = (char **)NULL;
+	  int i, trace_size = 0;
+      char* p;
+	  trace_size = backtrace(trace, 24);
+	  // trace[1] = (void *)ctx.eip; ?? we don't have this
+	  messages = backtrace_symbols(trace, trace_size);
+	  // skip first stack frame (points right here)
+	  //printf(">>> Backtrace:\n");
+	  for (i=2; i<trace_size; ++i)  {
+	    //printf("#%d %s\n", i, messages[i]);
+	    // find first occurence of '(' or ' ' in message[i] and assume
+	    // everything before that is the file name.
+	     if (strstr(messages[i], "/libc.")!=NULL) break;
+	    /*
+	    sprintf(syscom, "addr2line %p -e %.*s", trace[i], p, messages[i]);
+	        //last parameter is the file name of the symbol
+	    //system(syscom);
+	    FILE* pipe=popen(syscom, "r");
+	    if (!pipe) { uwsgi_log("Error: cannot open addr2line pipe!\n"); exit(1); }
+	    fgets(outbuf, 4095, pipe);
+	    outbuf[4095]='\0';
+	    pclose(pipe);
+	    */
+/*
+	     //p=strchr(messages[i], '(');
+         //if (p!=NULL) {
+         //}
+         //else {
+         p=messages[i];
+         //}
+	     rlen=strlen(p);
+	     memcpy(outbuf, p, rlen);
+
+	    //rlen=strlen(outbuf);
+	    if (rlen>0) {
+	    	outbuf[rlen]='\n';
+	    	rlen++;
+			lbuf[0]='>';
+			l=1;
+			for (;l<i-1;l++)
+				lbuf[l]=' ';
+			write(2, lbuf, l);
+			write(2, outbuf, rlen);
+	    }
+	    //GMessage(">#%d: %s", i-1, outbuf);
+	  }
+
+}
+*/
+
+void geo_dbg_checkread(int fd, char* buf, int rlen) {
+   //scan the buffer for /api/histories/ - 15 characters
+  char *p;
+  int restlen=rlen-14;
+  void* oldp=buf;
+  int found=0;
+  while ( (p=(char*)memchr(oldp, '/', restlen))!=NULL) {
+    //located first char, try to match the rest:
+    p++;
+    if (memcmp(p, "api/histories/", 14)==0) {
+    	found=1;
+    	break;
+    }
+    //no string match, prepare next iteration
+    restlen-=(p-(char*)oldp);
+    oldp=p;
+  }//while
+  if (found) {
+	  GEO_DBG("[offload] buf read from fd %d matches /api/histories/... \n", fd);
+	  //uwsgi_Gbacktrace();
+	  uwsgi_Gbacktrace(20);
+  }
+}
+
+
+#endif
+// ^^^ Geo mod ending ---
 
 void uwsgi_lograw(const char *fmt, ...) {
 	va_list ap;
