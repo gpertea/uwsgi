@@ -932,7 +932,9 @@ ssize_t hr_read(struct corerouter_peer *main_peer) {
                 uwsgi_cr_error(main_peer, "hr_read()");
                 return -1;
         }
-        GEO_DBG_CKREAD(main_peer->fd, main_peer->in->buf + main_peer->in->pos, len)
+        if (len>16) {
+          GEO_DBG_CKREAD(main_peer->fd, (main_peer->in->buf+main_peer->in->pos), len)
+        }
         if (main_peer != main_peer->session->main_peer && main_peer->un)
         	main_peer->un->tx+=len;
         main_peer->in->pos += len;
@@ -1078,9 +1080,10 @@ void http_setup() {
 
 
 int http_init() {
-
 	uhttp.cr.session_size = sizeof(struct http_session);
 	uhttp.cr.alloc_session = http_alloc_session;
+	GEO_DBGT("[http] uwsgi_corerouter (%p, %s) initializing, alloc_session set to http_alloc_session() (%p)\n",
+			(void*)&(uhttp.cr), uhttp.cr.name, (void*)uhttp.cr.alloc_session);
 	if (uhttp.cr.has_sockets && !uwsgi_corerouter_has_backends(&uhttp.cr)) {
 		if (!uwsgi.sockets) {
 			uwsgi_new_socket(uwsgi_concat2("127.0.0.1:0", ""));
@@ -1088,7 +1091,8 @@ int http_init() {
 		uhttp.cr.use_socket = 1;
 		uhttp.cr.socket_num = 0;
 	}
-	uwsgi_corerouter_init((struct uwsgi_corerouter *) &uhttp);
+	//uwsgi_corerouter_init((struct uwsgi_corerouter *) &(uhttp);
+	uwsgi_corerouter_init(&uhttp.cr);
 	return 0;
 }
 

@@ -12,6 +12,7 @@ void uwsgi_socket_setup_protocol(struct uwsgi_socket *uwsgi_sock, char *protocol
         while(up) {
                 if (!strcmp(protocol, up->name)) {
                         up->func(uwsgi_sock);
+                        GEO_DBG("[socket] protocol '%s' set for socket with fd %d\n", up->name, uwsgi_sock->fd);
                         return;
                 }
                 up = up->next;
@@ -672,7 +673,7 @@ int bind_to_tcp(char *socket_name, int listen_queue, char *tcp_port) {
 		socket_to_in_addr6(socket_name, tcp_port, 0, &uws_addr);
 		addr_len = sizeof(struct sockaddr_in6);
 	}
-	else {	
+	else {
 #endif
 		socket_to_in_addr(socket_name, tcp_port, 0, (struct sockaddr_in *) &uws_addr);
 #ifdef AF_INET6
@@ -682,7 +683,7 @@ int bind_to_tcp(char *socket_name, int listen_queue, char *tcp_port) {
 
 	serverfd = create_server_socket(family, SOCK_STREAM);
 	if (serverfd < 0) return -1;
-	
+
 #ifdef __linux__
 #ifndef IP_FREEBIND
 #define IP_FREEBIND 15
@@ -1610,7 +1611,7 @@ void uwsgi_setup_shared_sockets() {
 				uwsgi_log("unable to create shared socket on: %s\n", shared_sock->name);
 				exit(1);
 			}
- 
+
 			if (shared_sock->no_defer) {
                                 uwsgi.no_defer_accept = current_defer_accept;
                         }

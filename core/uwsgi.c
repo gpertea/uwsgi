@@ -2764,7 +2764,7 @@ int uwsgi_start(void *v_argv) {
 	}
 
 	// allocate rpc structures
-        uwsgi_rpc_init();
+	uwsgi_rpc_init();
 
 	// initialize sharedareas
 	uwsgi_sharedareas_init();
@@ -2804,7 +2804,7 @@ int uwsgi_start(void *v_argv) {
         }
 
         // initialize the alarm subsystem
-        uwsgi_alarms_init();
+	uwsgi_alarms_init();
 
 	// initialize the exception handlers
 	uwsgi_exception_setup_handlers();
@@ -2815,12 +2815,12 @@ int uwsgi_start(void *v_argv) {
 	/* plugin initialization */
 	for (i = 0; i < uwsgi.gp_cnt; i++) {
 		if (uwsgi.gp[i]->init) {
+			GEO_DBG("Initializing general plugin uwsgi.gp[%d] (%s)\n", i, uwsgi.gp[i]->name);
 			uwsgi.gp[i]->init();
 		}
 	}
 
 	if (!uwsgi.no_server) {
-
 		// systemd/upstart/zerg socket activation
 		if (!uwsgi.is_a_reload) {
 			uwsgi_setup_systemd();
@@ -2828,7 +2828,6 @@ int uwsgi_start(void *v_argv) {
 			uwsgi_setup_zerg();
 			uwsgi_setup_emperor();
 		}
-
 
 		//check for inherited sockets
 		if (uwsgi.is_a_reload) {
@@ -2853,6 +2852,7 @@ int uwsgi_start(void *v_argv) {
 	if (uwsgi.sockets || uwsgi.master_process || uwsgi.no_server || uwsgi.command_mode || uwsgi.loop) {
 		for (i = 0; i < 256; i++) {
 			if (uwsgi.p[i]->init) {
+				GEO_DBG("[uwsgi] initializing request plugin uwsgi.p[%d] (%s)\n", i, uwsgi.p[i]->name);
 				uwsgi.p[i]->init();
 			}
 		}
@@ -3187,7 +3187,7 @@ next:
 	if (uwsgi.master_process) {
 		// initialize threads with shared state
 		uwsgi_alarm_thread_start();
-        	uwsgi_exceptions_handler_thread_start();
+		uwsgi_exceptions_handler_thread_start();
 		// initialize a mutex to avoid glibc problem with pthread+fork()
 		if (uwsgi.threaded_logger) {
 			pthread_mutex_init(&uwsgi.threaded_logger_lock, NULL);
@@ -3200,8 +3200,6 @@ next:
 			uwsgi_log("spawned uWSGI master process (pid: %d)\n", uwsgi.mypid);
 		}
 	}
-
-
 
 	// security in multiuser environment: allow only a subset of modifiers
 	if (uwsgi.allowed_modifiers) {
@@ -3219,8 +3217,6 @@ next:
 			uwsgi.p[i]->master_fixup(0);
 		}
 	}
-
-
 
 	struct uwsgi_spooler *uspool = uwsgi.spoolers;
 	while (uspool) {
@@ -3550,14 +3546,14 @@ void uwsgi_ignition() {
 
 	for (i = 0; i < 256; i++) {
 		if (uwsgi.p[i]->hijack_worker) {
-			GEO_DBG("[uwsgi] hijacking worker uwsgi.p[%d]\n",i);
+			GEO_DBG("[uwsgi_ignition] hijacking worker uwsgi.p[%d] (%s)\n",i, uwsgi.p[i]->name);
 			uwsgi.p[i]->hijack_worker();
 		}
 	}
 
 	for (i = 0; i < uwsgi.gp_cnt; i++) {
 		if (uwsgi.gp[i]->hijack_worker) {
-			GEO_DBG("[uwsgi] hijacking worker uwsgi.gp[%d]\n",i);
+			GEO_DBG("[uwsgi_ignition] hijacking worker uwsgi.gp[%d] (%s)\n",i, uwsgi.gp[i]->name);
 			uwsgi.gp[i]->hijack_worker();
 		}
 	}

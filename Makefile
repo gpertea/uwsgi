@@ -1,7 +1,8 @@
 PYTHON := python
 
 all:
-	$(PYTHON) uwsgiconfig.py --build $(PROFILE)
+	$(PYTHON) uwsgiconfig.py --build dbgtrace
+##	$(PYTHON) uwsgiconfig.py --build $(PROFILE)
 
 debug:
 	$(PYTHON) uwsgiconfig.py --build debug

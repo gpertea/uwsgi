@@ -123,13 +123,13 @@ static ssize_t fpty_write(struct corerouter_peer *main_peer) {
 		// reset the buffer
 		main_peer->out->pos = 0;
                 cr_reset_hooks(main_peer);
-        } 
+        }
 
 	return len;
 }
 
 static ssize_t fpty_parse_uwsgi(struct corerouter_peer *peer) {
-	
+
 	struct forkptyrouter_session *fpty_session = (struct forkptyrouter_session *) peer->session;
 	for(;;) {
 	if (peer->in->pos < 4) return 0;
@@ -140,8 +140,8 @@ static ssize_t fpty_parse_uwsgi(struct corerouter_peer *peer) {
 			// stdin
 			if ((size_t) (pktsize+4) > peer->in->pos) return 0;
 			if (uwsgi_buffer_decapitate(peer->in, 4)) return -1;
-			return pktsize;		
-		case 100:	
+			return pktsize;
+		case 100:
 			if (uwsgi_buffer_decapitate(peer->in, 4)) return -1;
 			fpty_session->w.ws_row = pktsize;
 			ioctl(peer->session->peers->fd, TIOCSWINSZ, &fpty_session->w);
@@ -188,7 +188,7 @@ static ssize_t fpty_read(struct corerouter_peer *main_peer) {
 		if (rlen < 0) return -1;
 		if (rlen == 0) return 1;
 
-		fpty_session->restore_size = main_peer->in->pos - rlen;	
+		fpty_session->restore_size = main_peer->in->pos - rlen;
 		main_peer->session->peers->out = main_peer->in;
 		main_peer->session->peers->out->pos = rlen;
 	}
@@ -245,22 +245,22 @@ static int forkptyrouter_alloc_session(struct uwsgi_corerouter *ucr, struct uwsg
 			if (space) {
 				char *argv[4];
 				argv[0] = uwsgi_binsh();
-				argv[1] = "-c";	
-				argv[2] = ufpty.cmd;	
-				argv[3] = NULL;	
+				argv[1] = "-c";
+				argv[2] = ufpty.cmd;
+				argv[3] = NULL;
 				execv(argv[0], argv);
 			}
 			else {
 				char *argv[2];
 				argv[0] = ufpty.cmd;
-				argv[1] = NULL;	
+				argv[1] = NULL;
 				execv(argv[0], argv);
 			}
 		}
 		else {
 			char *argv[2];
 			argv[0] = "/bin/sh";
-			argv[1] = NULL;	
+			argv[1] = NULL;
 			execv(argv[0], argv);
 		}
 		// never here;
@@ -277,6 +277,8 @@ static int forkptyrouter_init() {
 
 	ufpty.cr.session_size = sizeof(struct forkptyrouter_session);
 	ufpty.cr.alloc_session = forkptyrouter_alloc_session;
+	GEO_DBGT("cr (%p) alloc_session set to forkptyrouter_alloc_session() (%p)\n",
+			(void*)&(ufpty.cr), (void*)ufpty.cr.alloc_session);
 	uwsgi_corerouter_init((struct uwsgi_corerouter *) &ufpty);
 
 	return 0;

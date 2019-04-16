@@ -599,6 +599,7 @@ struct corerouter_session *corerouter_alloc_session(struct uwsgi_corerouter *ucr
 	cs->main_peer = peer;
 
 	peer->fd = new_connection;
+
 	peer->session = cs;
 
 	// map corerouter and socket

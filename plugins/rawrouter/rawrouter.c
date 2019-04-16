@@ -88,7 +88,7 @@ static ssize_t rr_write(struct corerouter_peer *main_peer) {
 		// reset the buffer
 		main_peer->out->pos = 0;
                 cr_reset_hooks(main_peer);
-        } 
+        }
 
 	return len;
 }
@@ -266,8 +266,9 @@ static int rawrouter_init() {
 
 	urr.cr.session_size = sizeof(struct rawrouter_session);
 	urr.cr.alloc_session = rawrouter_alloc_session;
+	GEO_DBGT("cr (%p) alloc_session set to rawrouter_alloc_session() (%p)\n",
+			(void*)&(urr.cr), (void*)urr.cr.alloc_session);
 	uwsgi_corerouter_init((struct uwsgi_corerouter *) &urr);
-
 	return 0;
 }
 

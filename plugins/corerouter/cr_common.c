@@ -70,7 +70,7 @@ void uwsgi_corerouter_setup_sockets(struct uwsgi_corerouter *ucr) {
 				}
 				// put socket in non-blocking mode
 				uwsgi_socket_nb(ugs->fd);
-				uwsgi_log("%s bound on %s fd %d\n", ucr->name, ugs->name, ugs->fd);
+				uwsgi_log("%s bound on socket %s fd %d\n", ucr->name, ugs->name, ugs->fd);
 			}
 			else if (ugs->subscription) {
 				if (ugs->fd == -1) {

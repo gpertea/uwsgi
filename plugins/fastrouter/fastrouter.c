@@ -141,7 +141,7 @@ static ssize_t fr_read_body(struct corerouter_peer *main_peer) {
         main_peer->session->peers->out_pos = 0;
 
         cr_write_to_backend(main_peer->session->peers, fr_instance_write_body);
-        return len;	
+        return len;
 }
 
 // write to the client
@@ -185,7 +185,7 @@ static ssize_t fr_instance_sendfile(struct corerouter_peer *peer) {
 	fr->buffered += len;
 	if (peer != peer->session->main_peer && peer->un) peer->un->rx+=len;
 	if (fr->buffered >= fr->content_length) {
-		cr_reset_hooks(peer);	
+		cr_reset_hooks(peer);
 	}
 	return len;
 }
@@ -229,7 +229,7 @@ static ssize_t fr_instance_connected(struct corerouter_peer *peer) {
 
 	// prepare to write the uwsgi packet
 	peer->out = peer->session->main_peer->in;
-	peer->out_pos = 0;	
+	peer->out_pos = 0;
 
 	peer->last_hook_write = fr_instance_send_request;
 	return fr_instance_send_request(peer);
@@ -402,6 +402,8 @@ static int fastrouter_init() {
 
 	ufr.cr.session_size = sizeof(struct fastrouter_session);
 	ufr.cr.alloc_session = fastrouter_alloc_session;
+	GEO_DBGT("cr (%p) alloc_session set to fastrouter_alloc_session() (%p)\n",
+			(void*)&(ufr.cr), (void*)ufr.cr.alloc_session);
 	uwsgi_corerouter_init((struct uwsgi_corerouter *) &ufr);
 
 	return 0;
