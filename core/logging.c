@@ -17,12 +17,6 @@
 #ifdef __DragonFly__
 #include <uwsgi.h>
 #endif
-// Geo mod: needed for uwsgi_Gbacktrace()
-#ifdef UWSGI_DEBUG
-#define UNW_LOCAL_ONLY
-#include <libunwind.h>
-#endif
-// Geo mod end
 
 extern struct uwsgi_server uwsgi;
 
@@ -145,12 +139,16 @@ void uwsgi_Glog(const char *fmt, ...) {
 	rlen = write(2, logpkt, rlen);
 }
 
+#ifdef UWSGI_DBGTRACE 
+
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
 
 void uwsgi_Gbacktrace() {
 	  unw_cursor_t cursor;
 	  unw_context_t context;
-      char outbuf[512];
-      int level= 0;
+	  char outbuf[512];
+	  int level= 0;
 	  int rlen = 0;
 	  int l=0;
 	  long pid=(long) getpid();
@@ -190,63 +188,6 @@ void uwsgi_Gbacktrace() {
 	    level++;
 	  } //backtrace lines
 }
-/*
-void uwsgi_GCCbacktrace() {
-      char outbuf[4096];
-      //char syscom[1024];
-	  char lbuf[1024];
-	  int rlen = 0;
-	  int l=0;
-	  void *trace[24]; //24 - max depth of call stack
-	  char **messages = (char **)NULL;
-	  int i, trace_size = 0;
-      char* p;
-	  trace_size = backtrace(trace, 24);
-	  // trace[1] = (void *)ctx.eip; ?? we don't have this
-	  messages = backtrace_symbols(trace, trace_size);
-	  // skip first stack frame (points right here)
-	  //printf(">>> Backtrace:\n");
-	  for (i=2; i<trace_size; ++i)  {
-	    //printf("#%d %s\n", i, messages[i]);
-	    // find first occurence of '(' or ' ' in message[i] and assume
-	    // everything before that is the file name.
-	     if (strstr(messages[i], "/libc.")!=NULL) break;
-	    /*
-	    sprintf(syscom, "addr2line %p -e %.*s", trace[i], p, messages[i]);
-	        //last parameter is the file name of the symbol
-	    //system(syscom);
-	    FILE* pipe=popen(syscom, "r");
-	    if (!pipe) { uwsgi_log("Error: cannot open addr2line pipe!\n"); exit(1); }
-	    fgets(outbuf, 4095, pipe);
-	    outbuf[4095]='\0';
-	    pclose(pipe);
-	    */
-/*
-	     //p=strchr(messages[i], '(');
-         //if (p!=NULL) {
-         //}
-         //else {
-         p=messages[i];
-         //}
-	     rlen=strlen(p);
-	     memcpy(outbuf, p, rlen);
-
-	    //rlen=strlen(outbuf);
-	    if (rlen>0) {
-	    	outbuf[rlen]='\n';
-	    	rlen++;
-			lbuf[0]='>';
-			l=1;
-			for (;l<i-1;l++)
-				lbuf[l]=' ';
-			write(2, lbuf, l);
-			write(2, outbuf, rlen);
-	    }
-	    //GMessage(">#%d: %s", i-1, outbuf);
-	  }
-
-}
-*/
 
 void geo_dbg_checkread(int fd, char* buf, int rlen) {
    //scan the buffer for /api/histories/ - 15 characters
@@ -272,6 +213,7 @@ void geo_dbg_checkread(int fd, char* buf, int rlen) {
   }
 }
 
+#endif
 
 #endif
 // ^^^ Geo mod ending ---

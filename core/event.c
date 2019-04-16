@@ -717,7 +717,9 @@ int event_queue_wait_multi(int eq, int timeout, void *events, int nevents) {
     			iev++;
     		}
     	}
-    	if (iev>0) uwsgi_Gbacktrace();
+	#ifdef UWSGI_DBGTRACE
+		if (iev>0) uwsgi_Gbacktrace();
+	#endif
     }
 #endif
 	return ret;

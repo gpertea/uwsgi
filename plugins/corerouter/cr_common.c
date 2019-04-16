@@ -131,9 +131,7 @@ void uwsgi_corerouter_manage_subscription(struct uwsgi_corerouter *ucr, int id, 
 		len = recv(ugs->fd, bbuf, 4096, 0);
 	}
 	if (len > 0) {
-#ifdef UWSGI_DEBUG
-		geo_dbg_checkread(ugs->fd, bbuf, len);
-#endif
+		GEO_DBG_CKREAD(ugs->fd, bbuf, len)
 		uwsgi_hooked_parse(bbuf + 4, len - 4, corerouter_manage_subscription, &usr);
 		if (usr.sign_len > 0) {
 			// calc the base size
@@ -247,9 +245,7 @@ void uwsgi_corerouter_manage_internal_subscription(struct uwsgi_corerouter *ucr,
 
 	ssize_t len = recv(fd, bbuf, 4096, 0);
 	if (len > 0) {
-#ifdef UWSGI_DEBUG
-		geo_dbg_checkread(fd, bbuf, len);
-#endif
+		GEO_DBG_CKREAD(fd, bbuf, len)
 		memset(&usr, 0, sizeof(struct uwsgi_subscribe_req));
 		uwsgi_hooked_parse(bbuf + 4, len - 4, corerouter_manage_subscription, &usr);
 

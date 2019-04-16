@@ -151,16 +151,15 @@ void *uwsgi_request_subhandler_wsgi(struct wsgi_request *wsgi_req, struct uwsgi_
                 pydictvalue = PyString_FromStringAndSize(wsgi_req->hvec[i + 1].iov_base, wsgi_req->hvec[i + 1].iov_len);
 #endif
 
-#ifdef UWSGI_DEBUG
-//		uwsgi_log("%p %d %p %d\n", pydictkey, wsgi_req->hvec[i].iov_len, pydictvalue, wsgi_req->hvec[i + 1].iov_len);
-#endif
                 PyDict_SetItem(wsgi_req->async_environ, pydictkey, pydictvalue);
                 Py_DECREF(pydictkey);
                 Py_DECREF(pydictvalue);
         }
 #ifdef UWSGI_DEBUG
  		uwsgi_lograw("\n");
+#ifdef UWSGI_DBGTRACE
  		uwsgi_Gbacktrace();
+#endif
 #endif
 
         if (wsgi_req->uh->modifier1 == UWSGI_MODIFIER_MANAGE_PATH_INFO) {

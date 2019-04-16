@@ -435,7 +435,7 @@ static int u_offload_pipe_do(struct uwsgi_thread *ut, struct uwsgi_offload_reque
 			}
 			rlen = read(uor->fd, uor->buf, 4096);
 			if (rlen > 0) {
-				geo_dbg_checkread(uor->fd, uor->buf, rlen);
+				GEO_DBG_CKREAD(uor->fd, uor->buf, rlen)
 				uor->to_write = rlen;
 				uor->pos = 0;
 				if (event_queue_del_fd(ut->queue, uor->fd, event_queue_read())) return -1;
@@ -537,7 +537,7 @@ static int u_offload_transfer_do(struct uwsgi_thread *ut, struct uwsgi_offload_r
 			if (fd == uor->fd) {
 				rlen = read(uor->fd, uor->buf, 4096);
 				if (rlen > 0) {
-					geo_dbg_checkread(uor->fd, uor->buf, rlen);
+					GEO_DBG_CKREAD(uor->fd, uor->buf, rlen)
 					uor->to_write = rlen;
 					uor->pos = 0;
 					uwsgi_offload_0r_1w(uor->fd, uor->s)
@@ -552,7 +552,7 @@ static int u_offload_transfer_do(struct uwsgi_thread *ut, struct uwsgi_offload_r
 			else if (fd == uor->s) {
 				rlen = read(uor->s, uor->buf, 4096);
 				if (rlen > 0) {
-					geo_dbg_checkread(uor->fd, uor->buf, rlen);
+					GEO_DBG_CKREAD(uor->fd, uor->buf, rlen)
 					uor->to_write = rlen;
 					uor->pos = 0;
 					uwsgi_offload_0r_1w(uor->s, uor->fd)

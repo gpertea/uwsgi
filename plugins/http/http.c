@@ -932,7 +932,7 @@ ssize_t hr_read(struct corerouter_peer *main_peer) {
                 uwsgi_cr_error(main_peer, "hr_read()");
                 return -1;
         }
-        geo_dbg_checkread(main_peer->fd, main_peer->in->buf + main_peer->in->pos, len);
+        GEO_DBG_CKREAD(main_peer->fd, main_peer->in->buf + main_peer->in->pos, len)
         if (main_peer != main_peer->session->main_peer && main_peer->un)
         	main_peer->un->tx+=len;
         main_peer->in->pos += len;

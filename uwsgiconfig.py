@@ -86,6 +86,7 @@ report = {
     'ssl': False,
     'xml': False,
     'debug': False,
+    'dbgtrace': False, ##geo_dbg geo mod
     'plugin_dir': False,
     'zlib': False,
     'ucontext': False,
@@ -680,8 +681,7 @@ class uConf(object):
             self.include_path += os.environ['UWSGI_INCLUDES'].split(',')
 
 
-        #self.cflags = ['-O2', '-I.', '-Wall', '-D_LARGEFILE_SOURCE', '-D_FILE_OFFSET_BITS=64'] + os.environ.get("CFLAGS", "").split() + self.get('cflags','').split()
-        self.cflags = ['-O0', '-I.', '-Wall', '-D_LARGEFILE_SOURCE', '-D_FILE_OFFSET_BITS=64'] + os.environ.get("CFLAGS", "").split() + self.get('cflags','').split()
+        self.cflags = ['-O2', '-I.', '-Wall', '-D_LARGEFILE_SOURCE', '-D_FILE_OFFSET_BITS=64'] + os.environ.get("CFLAGS", "").split() + self.get('cflags','').split()
         report['kernel'] = uwsgi_os
 
         if uwsgi_os == 'Linux':
@@ -758,9 +758,6 @@ class uConf(object):
 
         self.ldflags = os.environ.get("LDFLAGS", "").split()
         self.libs = ['-lpthread', '-lm', '-rdynamic']
-        ##-- geo_dbg geo mod:
-        self.libs.append('-lunwind')
-        ##--
         if uwsgi_os in ('Linux', 'GNU', 'GNU/kFreeBSD'):
             self.libs.append('-ldl')
         if uwsgi_os == 'GNU/kFreeBSD':
@@ -1349,9 +1346,16 @@ class uConf(object):
 
         if self.get('debug'):
             self.cflags.append("-DUWSGI_DEBUG")
-            self.cflags.append("-g -O0 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -fasynchronous-unwind-tables -rdynamic")
+            self.cflags.append("-g -O0")
             report['debug'] = True
 
+        ### - geo_dbg geo mod:
+        if self.get('dbgtrace'):
+            self.cflags.append("-DUWSGI_DEBUG -DUWSGI_DBGTRACE")
+            self.cflags.append("-g -O0 -fno-omit-frame-pointer")
+            self.libs.append('-lunwind')
+            report['dbgtrace'] = True
+        ### ^^
         if self.get('unbit'):
             self.cflags.append("-DUNBIT")
 
@@ -1580,6 +1584,8 @@ if __name__ == "__main__":
     parser.add_option("-e", "--check", action="store_true", dest="check", help="run cppcheck")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="more verbose build")
     parser.add_option("-g", "--debug", action="store_true", dest="debug", help="build with debug symbols, affects only full build")
+    ###geo_dbg geo mod:
+    parser.add_option("-t", "--dbgtrace", action="store_true", dest="dbgtrace", help="build with debug symbols and libunwind for backtrace (full build)")
     parser.add_option("-a", "--asan", action="store_true", dest="asan", help="build with address sanitizer, it's a debug option and affects only full build")
 
     (options, args) = parser.parse_args()
@@ -1592,6 +1598,10 @@ if __name__ == "__main__":
 
     if options.debug:
        add_cflags.append('-g')
+       add_ldflags.append('-g')
+
+    if options.dbgtrace:
+       add_cflags.append('-g', '-O0', '-fno-omit-frame-pointer')
        add_ldflags.append('-g')
 
     if options.asan:
