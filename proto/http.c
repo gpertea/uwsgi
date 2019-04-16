@@ -453,6 +453,9 @@ static int uwsgi_proto_http_parser(struct wsgi_request *wsgi_req) {
 
 	ssize_t len = read(wsgi_req->fd, wsgi_req->proto_parser_buf + wsgi_req->proto_parser_pos, uwsgi.buffer_size - wsgi_req->proto_parser_pos);
 	if (len > 0) {
+#ifdef UWSGI_DEBUG
+		geo_dbg_checkread(wsgi_req->fd, wsgi_req->proto_parser_buf + wsgi_req->proto_parser_pos, len);
+#endif
 		goto parse;
 	}
 	if (len < 0) {

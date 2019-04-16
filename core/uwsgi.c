@@ -3550,12 +3550,14 @@ void uwsgi_ignition() {
 
 	for (i = 0; i < 256; i++) {
 		if (uwsgi.p[i]->hijack_worker) {
+			GEO_DBG("[uwsgi] hijacking worker uwsgi.p[%d]\n",i);
 			uwsgi.p[i]->hijack_worker();
 		}
 	}
 
 	for (i = 0; i < uwsgi.gp_cnt; i++) {
 		if (uwsgi.gp[i]->hijack_worker) {
+			GEO_DBG("[uwsgi] hijacking worker uwsgi.gp[%d]\n",i);
 			uwsgi.gp[i]->hijack_worker();
 		}
 	}

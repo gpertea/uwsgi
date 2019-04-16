@@ -123,10 +123,8 @@ void *uwsgi_request_subhandler_wsgi(struct wsgi_request *wsgi_req, struct uwsgi_
 	int i;
 	PyObject *pydictkey, *pydictvalue;
 	char *path_info;
-	//--geo: only print a subset of the request attributes
-	//char  *_request_method=NULL, *_request_uri=NULL, *_http_host=NULL,
-	//	*_remote_addr=NULL, *_remote_port=NULL;
-    int logfirst=1;
+	//--geo_dbg geo mod: only print a subset of the request attributes
+    int firstlog=1;
     for (i = 0; i < wsgi_req->var_cnt; i += 2) {
 #ifdef UWSGI_DEBUG
         	if (strncmp(wsgi_req->hvec[i].iov_base, "REQUEST_METHOD", wsgi_req->hvec[i].iov_len)==0 ||
@@ -135,13 +133,13 @@ void *uwsgi_request_subhandler_wsgi(struct wsgi_request *wsgi_req, struct uwsgi_
 				strncmp(wsgi_req->hvec[i].iov_base, "REMOTE_ADDR", wsgi_req->hvec[i].iov_len)==0 ||
 				strncmp(wsgi_req->hvec[i].iov_base, "REMOTE_PORT", wsgi_req->hvec[i].iov_len)==0
 				) {
-              if (logfirst) {
-            	  uwsgi_log("%.*s=%.*s", wsgi_req->hvec[i].iov_len, wsgi_req->hvec[i].iov_base, wsgi_req->hvec[i+1].iov_len, wsgi_req->hvec[i+1].iov_base);
+              if (firstlog) {
+            	  uwsgi_Glog("%.*s=%.*s", wsgi_req->hvec[i].iov_len, wsgi_req->hvec[i].iov_base, wsgi_req->hvec[i+1].iov_len, wsgi_req->hvec[i+1].iov_base);
               }
               else {
             	  uwsgi_lograw(" %.*s=%.*s", wsgi_req->hvec[i].iov_len, wsgi_req->hvec[i].iov_base, wsgi_req->hvec[i+1].iov_len, wsgi_req->hvec[i+1].iov_base);
               }
-              logfirst=0;
+              firstlog=0;
         	}
 
 #endif
@@ -162,6 +160,7 @@ void *uwsgi_request_subhandler_wsgi(struct wsgi_request *wsgi_req, struct uwsgi_
         }
 #ifdef UWSGI_DEBUG
  		uwsgi_lograw("\n");
+ 		uwsgi_Gbacktrace();
 #endif
 
         if (wsgi_req->uh->modifier1 == UWSGI_MODIFIER_MANAGE_PATH_INFO) {

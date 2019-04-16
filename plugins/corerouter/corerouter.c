@@ -845,7 +845,7 @@ void uwsgi_corerouter_loop(int id, void *data) {
 									ugs->name_len, ugs->name);
 							break;
 						}
-						GEO_DBG("[corerouter gw:%d event] allocated new session %x for client %s:%s, socket fd %d\n",
+						GEO_DBG("[corerouter gw:%d event] new corerouter_session %x for client %s:%s, socket fd %d\n",
 								id, cr, cr->client_address, cr->client_port, new_connection);
 					}
 					else if (ugs->subscription) {
@@ -894,6 +894,9 @@ void uwsgi_corerouter_loop(int id, void *data) {
 
 				// call event hook
 				if (event_queue_interesting_fd_is_read(events, i)) {
+					GEO_DBG("[corerouter gw:%d event] uwsgi_corerouter_loop() will call hook_read for fd %d\n",
+							id, ucr->interesting_fd);
+
 					hook = peer->hook_read;
 				}
 				else if (event_queue_interesting_fd_is_write(events, i)) {

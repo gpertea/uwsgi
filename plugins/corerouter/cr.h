@@ -72,15 +72,15 @@
 			if (uwsgi_cr_set_hooks(peer->session->main_peer, NULL, NULL)) return -1;\
 		}\
 		struct corerouter_peer *peers = peer->session->peers;\
-                while(peers) {\
+        while(peers) {\
                         if (uwsgi_cr_set_hooks(peers, peers->last_hook_read, NULL)) return -1;\
                         peers = peers->next;\
                 }
 
 #define cr_reset_hooks_and_read(peer, f) if (uwsgi_cr_set_hooks(peer->session->main_peer, peer->session->main_peer->last_hook_read, NULL)) return -1;\
 		peer->last_hook_read = f;\
-                struct corerouter_peer *peers = peer->session->peers;\
-                while(peers) {\
+        struct corerouter_peer *peers = peer->session->peers;\
+        while(peers) {\
                         if (uwsgi_cr_set_hooks(peers, peers->last_hook_read, NULL)) return -1;\
                         peers = peers->next;\
                 }
@@ -125,7 +125,7 @@ struct corerouter_session;
 
 // a peer is a connection to a socket (a client or a backend) and can be monitored for events.
 struct corerouter_peer {
-	// the file descriptor 
+	// the file descriptor
 	int fd;
 	// the session
 	struct corerouter_session *session;
@@ -160,7 +160,7 @@ struct corerouter_peer {
         struct uwsgi_subscribe_node *un;
         struct uwsgi_string_list *static_node;
 
-	// incoming data 
+	// incoming data
         struct uwsgi_buffer *in;
 	// data to send
         struct uwsgi_buffer *out;

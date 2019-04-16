@@ -139,7 +139,7 @@ static int http_add_uwsgi_header(struct corerouter_peer *peer, char *hh, size_t 
 			hr->websocket_key_len = vallen;
 			goto done;
 		}
-	}	
+	}
 
 	if (!uwsgi_strncmp("HOST", 4, hh, keylen)) {
 		if (vallen <= 0xff) {
@@ -162,7 +162,7 @@ static int http_add_uwsgi_header(struct corerouter_peer *peer, char *hh, size_t 
 		if (uhttp.chunked_input) {
 			if (!uwsgi_strnicmp(val, vallen, "chunked", 7)) {
 				hr->raw_body = 1;
-			} 
+			}
 		}
 	}
 
@@ -237,7 +237,7 @@ int http_headers_parse(struct corerouter_peer *peer) {
 		base = ptr;
         }
 
-	// REQUEST_METHOD 
+	// REQUEST_METHOD
 	while (ptr < watermark) {
 		if (*ptr == ' ') {
 			if (uwsgi_buffer_append_keyval(out, "REQUEST_METHOD", 14, base, ptr - base)) return -1;
@@ -418,7 +418,7 @@ int http_headers_parse(struct corerouter_peer *peer) {
 			if (!value) goto clear;
 			usl = uwsgi_string_list_has_item(headers, base, key_len);
 			// there is already a HTTP header with the same name, let's merge them
-			if (usl) {	
+			if (usl) {
 				char *old_value = usl->custom_ptr;
 				usl->custom_ptr = uwsgi_concat3n(old_value, (size_t) usl->custom, ", ", 2, value, value_len);
 				usl->custom += 2 + value_len;
@@ -433,7 +433,7 @@ int http_headers_parse(struct corerouter_peer *peer) {
 				usl->custom_ptr = value;
 				usl->custom = value_len;
 				usl->custom2 = has_prefix;
-			}	
+			}
 			ptr++;
 			base = ptr + 1;
 		}
@@ -452,7 +452,7 @@ int http_headers_parse(struct corerouter_peer *peer) {
 		struct uwsgi_string_list *tmp_usl = usl;
 		usl = usl->next;
 		free(tmp_usl);
-	}	
+	}
 
 	if (broken) return -1;
 
@@ -503,7 +503,7 @@ int hr_manage_expect_continue(struct corerouter_peer *peer) {
 		if (hr->content_length > uhttp.manage_expect) {
 			if (uwsgi_buffer_append(peer->in, "HTTP/1.1 413 Request Entity Too Large\r\n\r\n", 41)) return -1;
 			hr->session.wait_full_write = 1;
-			goto ready;	
+			goto ready;
 		}
 	}
 
@@ -548,13 +548,13 @@ ssize_t hr_instance_write(struct corerouter_peer *peer) {
 				peer->session->main_peer->out = peer->in;
                         	peer->session->main_peer->out_pos = 0;
 				hr->spdy_update_window = 0;
-                        	cr_write_to_main(peer, hr->func_write);	
+                        	cr_write_to_main(peer, hr->func_write);
 				return 1;
 			}
 			return spdy_parse(peer->session->main_peer);
 		}
 #endif
-		
+
         }
 
         return len;
@@ -589,7 +589,7 @@ ssize_t hr_write(struct corerouter_peer *main_peer) {
 ssize_t hr_instance_connected(struct corerouter_peer* peer) {
 
 	cr_peer_connected(peer, "hr_instance_connected()");
-	
+
 	// set the default timeout
 	http_set_timeout(peer, uhttp.cr.socket_timeout);
 
@@ -768,20 +768,30 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 					hr->content_length = 0;
 					// on pipeline attempt, disable keepalive
 					hr->session.can_keepalive = 0;
-				}		
+				}
 				else {
 					hr->content_length -= main_peer->in->pos;
 					if (hr->content_length == 0) {
 						main_peer->disabled = 1;
-                                		// stop reading from the client
-                                		if (uwsgi_cr_set_hooks(main_peer, NULL, NULL)) return -1;
+                        // stop reading from the client
+                        if (uwsgi_cr_set_hooks(main_peer, NULL, NULL)) return -1;
 					}
 				}
 			}
 		}
 		main_peer->session->peers->out = main_peer->in;
 		main_peer->session->peers->out_pos = 0;
-		cr_write_to_backend(main_peer->session->peers, hr_instance_write);
+		//cr_write_to_backend(main_peer->session->peers, hr_instance_write);
+		//---geo_dbg geo mod: expand the macro here for clarity:
+		if (uwsgi_cr_set_hooks(main_peer->session->peers->session->main_peer, NULL, NULL)) return -1;
+		if (uwsgi_cr_set_hooks(main_peer->session->peers, NULL, hr_instance_write)) return -1;
+		struct corerouter_peer *peers = main_peer->session->peers->session->peers;
+		while(peers) {
+			if (peers != main_peer->session->peers) {
+		        if (uwsgi_cr_set_hooks(peers, NULL, NULL)) return -1;
+		    }
+		    peers = peers->next;
+		}
 		return 1;
 	}
 
@@ -794,7 +804,7 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 	char *ptr = main_peer->in->buf;
 
 	hr->rnrn = 0;
-	
+
 	for (j = 0; j < len; j++) {
 		if (*ptr == '\r' && (hr->rnrn == 0 || hr->rnrn == 2)) {
 			hr->rnrn++;
@@ -820,7 +830,7 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
                 	struct corerouter_peer *new_peer = uwsgi_cr_peer_add(main_peer->session);
 			// default hook
 			new_peer->last_hook_read = hr_instance_read;
-		
+
 			// parse HTTP request
 			if (http_headers_parse(new_peer)) return -1;
 
@@ -856,7 +866,7 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
         		new_peer->out->buf[2] = (uint8_t) ((pktsize >> 8) & 0xff);
 
 			if (hr->remains > 0) {
-				if (hr->content_length < hr->remains) { 
+				if (hr->content_length < hr->remains) {
 					hr->remains = hr->content_length;
 					hr->content_length = 0;
 					// we need to avoid problems with pipelined requests
@@ -888,7 +898,7 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 			}
 
 			if (hr->send_expect_100) {
-				if (hr_manage_expect_continue(new_peer)) return -1;	
+				if (hr_manage_expect_continue(new_peer)) return -1;
 				break;
         		}
 
@@ -906,7 +916,7 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 		}
 		ptr++;
 	}
-	
+
 	return 1;
 }
 
@@ -914,7 +924,21 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 ssize_t hr_read(struct corerouter_peer *main_peer) {
         // try to always leave 4k available (this will dinamically increase the buffer...)
         if (uwsgi_buffer_ensure(main_peer->in, uwsgi.page_size)) return -1;
+#ifdef UWSGI_DEBUG
+//expand the macro here for better control
+        ssize_t len = read(main_peer->fd, main_peer->in->buf + main_peer->in->pos, main_peer->in->len - main_peer->in->pos);
+        if (len < 0) {
+                cr_try_again;
+                uwsgi_cr_error(main_peer, "hr_read()");
+                return -1;
+        }
+        geo_dbg_checkread(main_peer->fd, main_peer->in->buf + main_peer->in->pos, len);
+        if (main_peer != main_peer->session->main_peer && main_peer->un)
+        	main_peer->un->tx+=len;
+        main_peer->in->pos += len;
+#else
         ssize_t len = cr_read(main_peer, "hr_read()");
+#endif
         if (!len) return 0;
 
         return http_parse(main_peer);
@@ -957,7 +981,7 @@ ssize_t hr_recv_stud4(struct corerouter_peer * main_peer) {
 		}
 		// set the passed ip address
 		memcpy(&main_peer->session->client_sockaddr.sa_in.sin_addr, hr->stud_prefix + 1, 4);
-		
+
 		// optimistic approach
 		main_peer->hook_read = hr_read;
 		return hr_read(main_peer);
@@ -1009,7 +1033,7 @@ int http_alloc_session(struct uwsgi_corerouter *ucr, struct uwsgi_gateway_socket
 	}
 
 	if (uhttp.websockets) {
-		hr->websockets = 1;	
+		hr->websockets = 1;
 	}
 	hr->func_write = hr_write;
 

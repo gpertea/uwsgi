@@ -8,6 +8,9 @@ static int uwsgi_proto_uwsgi_parser(struct wsgi_request *wsgi_req) {
 	char *ptr = (char *) wsgi_req->uh;
 	ssize_t len = read(wsgi_req->fd, ptr + wsgi_req->proto_parser_pos, (uwsgi.buffer_size + 4) - wsgi_req->proto_parser_pos);
 	if (len > 0) {
+#ifdef UWSGI_DEBUG
+      	geo_dbg_checkread(wsgi_req->fd, ptr + wsgi_req->proto_parser_pos, len);
+#endif
 		wsgi_req->proto_parser_pos += len;
 		if (wsgi_req->proto_parser_pos >= 4) {
 #ifdef __BIG_ENDIAN__

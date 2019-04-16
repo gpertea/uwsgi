@@ -39,7 +39,7 @@ struct uwsgi_gateway *register_gateway(char *name, void (*loop) (int, void *), v
 #endif
 		uwsgi_error("socketpair()");
 	}
-
+    GEO_DBGT("[gateway] registering gateway %s (%s)\n",ug->name, ug->fullname);
 	uwsgi_socket_nb(ug->internal_subscription_pipe[0]);
 	uwsgi_socket_nb(ug->internal_subscription_pipe[1]);
 

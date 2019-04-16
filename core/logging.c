@@ -266,9 +266,9 @@ void geo_dbg_checkread(int fd, char* buf, int rlen) {
     oldp=p;
   }//while
   if (found) {
-	  GEO_DBG("[offload] buf read from fd %d matches /api/histories/... \n", fd);
+	  GEO_DBG("readmatch - buf read from fd %d matches /api/histories/... \n", fd);
 	  //uwsgi_Gbacktrace();
-	  uwsgi_Gbacktrace(20);
+	  uwsgi_Gbacktrace();
   }
 }
 
