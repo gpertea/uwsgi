@@ -87,6 +87,7 @@ report = {
     'xml': False,
     'debug': False,
     'dbgtrace': False, ##geo_dbg geo mod
+    'gsym': False, ##geo_dbg geo mod
     'plugin_dir': False,
     'zlib': False,
     'ucontext': False,
@@ -1349,6 +1350,12 @@ class uConf(object):
             self.cflags.append("-g -O0")
             report['debug'] = True
 
+        if self.get('gsym'):
+            #self.cflags.append("-DUWSGI_DEBUG")
+            self.cflags.append("-g -O0 -fno-omit-frame-pointer")
+            self.ldflags.append('-g')
+            report['gsym'] = False
+
         ### - geo_dbg geo mod:
         if self.get('dbgtrace'):
             self.cflags.append("-DUWSGI_DEBUG -DUWSGI_DBGTRACE")
@@ -1583,9 +1590,10 @@ if __name__ == "__main__":
     parser.add_option("-c", "--clean", action="store_true", dest="clean", help="clean the build")
     parser.add_option("-e", "--check", action="store_true", dest="check", help="run cppcheck")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="more verbose build")
-    parser.add_option("-g", "--debug", action="store_true", dest="debug", help="build with debug symbols, affects only full build")
     ###geo_dbg geo mod:
-    parser.add_option("-t", "--dbgtrace", action="store_true", dest="dbgtrace", help="build with debug symbols and libunwind for backtrace (full build)")
+    parser.add_option("-g", "--gsym", action="store_true", dest="gsym", help="build with debug symbols, affects only full build")
+    parser.add_option("-d", "--debug", action="store_true", dest="debug", help="build with debug messages, affects only full build")
+    parser.add_option("-t", "--dbgtrace", action="store_true", dest="dbgtrace", help="build with debug messages and libunwind for backtrace (full build)")
     parser.add_option("-a", "--asan", action="store_true", dest="asan", help="build with address sanitizer, it's a debug option and affects only full build")
 
     (options, args) = parser.parse_args()
@@ -1600,8 +1608,12 @@ if __name__ == "__main__":
        add_cflags.append('-g')
        add_ldflags.append('-g')
 
+    if options.gsym:
+       add_cflags.extend(['-g', '-O0', '-fno-omit-frame-pointer'])
+       add_ldflags.append('-g')
+
     if options.dbgtrace:
-       add_cflags.append('-g', '-O0', '-fno-omit-frame-pointer')
+       add_cflags.extend(['-g', '-O0', '-fno-omit-frame-pointer'])
        add_ldflags.append('-g')
 
     if options.asan:

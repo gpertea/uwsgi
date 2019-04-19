@@ -519,7 +519,7 @@ int event_queue_add_fd_read(int eq, int fd) {
 	memset(&ee, 0, sizeof(struct epoll_event));
 	ee.events = EPOLLIN;
 	ee.data.fd = fd;
-    // GEO_DBGT("[event] adding read fd %d to event queue %d\n", fd, eq);
+    //GEO_DBGT("[event] adding read fd %d to event queue %d\n", fd, eq);
 	if (epoll_ctl(eq, EPOLL_CTL_ADD, fd, &ee)) {
 		uwsgi_error("epoll_ctl()");
 		return -1;

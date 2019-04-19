@@ -1020,6 +1020,10 @@ static struct uwsgi_option uwsgi_base_options[] = {
 	{0, 0, 0, 0, 0, 0, 0}
 };
 
+#ifdef UWSGI_DBGTRACE
+int geo_dbg_read_match=0;
+#endif
+
 void show_config(void) {
 	int i;
 	uwsgi_log("\n;uWSGI instance configuration\n[uwsgi]\n");

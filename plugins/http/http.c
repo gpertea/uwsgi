@@ -750,11 +750,48 @@ ssize_t hr_instance_read(struct corerouter_peer *peer) {
 ssize_t http_parse(struct corerouter_peer *main_peer) {
 	struct corerouter_session *cs = main_peer->session;
 	struct http_session *hr = (struct http_session *) cs;
-
+	if (main_peer->in->pos>10) {
+		if (strncmp(main_peer->in->buf, "GET /",5)==0 || strncmp(main_peer->in->buf, "POST /",6)==0
+		 || strncmp(main_peer->in->buf, "HEAD /",6)==0) {
+			char* path=main_peer->in->buf+4;
+			if (*path!='/') ++path;
+			if (strncmp(path, "/proxy/", 7)!=0) hr->rnrn=0;
+		}
+#ifdef UWSGI_DBGTRACE
+		int v=main_peer->in->pos;
+		if (v>48) v=48;
+		uwsgi_Glog("[http_parse buffer] %.*s\n", v, main_peer->in->buf);
+#endif
+	}
+#ifdef UWSGI_DBGTRACE
+	int geo_dbg_ReadMatch=0;
+	if (main_peer->in->pos>19) {
+	   if (strncmp(main_peer->in->buf, "GET /api/histories/", 19)==0)
+		   geo_dbg_ReadMatch=1;
+	}
+    if (geo_dbg_ReadMatch) {
+    	uwsgi_Glog("[http_parse GET /api/histories] main_peer->session=%p, main_peer->session->corerouter=%p, http_session->func_write=%p\n",
+    		main_peer->session, cs->corerouter, hr->func_write);
+    	uwsgi_Glog("[http_parse GET /api/histories] main_peer hooks_read=%p, hook_write=%p\n",
+			main_peer->hook_read, main_peer->hook_write);
+    }
+#endif
 	// is it http body ?
 	if (hr->rnrn == 4) {
+#ifdef UWSGI_DBGTRACE
+			if (geo_dbg_ReadMatch)
+				uwsgi_Glog("[http_parse GET /api/histories] info: http_session->rnrn is 4 (body)\n");
+#endif
+
 		// something bad happened in keepalive mode...
-		if (!main_peer->session->peers) return -1;
+		if (!main_peer->session->peers) {
+#ifdef UWSGI_DBGTRACE
+			if (geo_dbg_ReadMatch) {
+				uwsgi_Glog("[http_parse GET /api/histories] main_peer->session->peers is NULL, return -1!\n");
+			}
+#endif
+			return -1;
+		}
 
 		if (hr->content_length == 0 && !hr->raw_body) {
 			// ignore data...
@@ -774,6 +811,8 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 					if (hr->content_length == 0) {
 						main_peer->disabled = 1;
                         // stop reading from the client
+						GEO_DBG("[http_parse] setting main_peer hooks (%p, %p) to NULL!\n",
+								main_peer->hook_read, main_peer->hook_write);
                         if (uwsgi_cr_set_hooks(main_peer, NULL, NULL)) return -1;
 					}
 				}
@@ -783,17 +822,46 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 		main_peer->session->peers->out_pos = 0;
 		//cr_write_to_backend(main_peer->session->peers, hr_instance_write);
 		//---geo_dbg geo mod: expand the macro here for clarity:
-		if (uwsgi_cr_set_hooks(main_peer->session->peers->session->main_peer, NULL, NULL)) return -1;
-		if (uwsgi_cr_set_hooks(main_peer->session->peers, NULL, hr_instance_write)) return -1;
+		if (uwsgi_cr_set_hooks(main_peer->session->peers->session->main_peer, NULL, NULL)) {
+#ifdef UWSGI_DBGTRACE
+			if (geo_dbg_ReadMatch) {
+				uwsgi_Glog("[http_parse GET /api/histories] uwsgi_cr_sethooks(main_peer->session->peers->session->main_peer, NULL, NULL)=> return -1\n",
+						0);
+			}
+#endif
+			return -1;
+		}
+		if (uwsgi_cr_set_hooks(main_peer->session->peers, NULL, hr_instance_write)) {
+#ifdef UWSGI_DBGTRACE
+			if (geo_dbg_ReadMatch) {
+				uwsgi_Glog("[http_parse GET /api/histories] uwsgi_cr_sethooks(ain_peer->session->peers, NULL, hr_instance_write) => return -1\n",
+						0);
+			}
+#endif
+			return -1;
+		}
 		struct corerouter_peer *peers = main_peer->session->peers->session->peers;
 		while(peers) {
 			if (peers != main_peer->session->peers) {
-		        if (uwsgi_cr_set_hooks(peers, NULL, NULL)) return -1;
+		        if (uwsgi_cr_set_hooks(peers, NULL, NULL)) {
+#ifdef UWSGI_DBGTRACE
+		        	if (geo_dbg_ReadMatch) {
+		        		uwsgi_Glog("[http_parse GET /api/histories] uwsgi_cr_sethooks(peers (%p), NULL, NULL) => return -1 (main_peer->session->peers=%p)\n",
+						  peers, main_peer->session->peers);
+		        	}
+#endif
+		        	return -1;
+		        }
 		    }
 		    peers = peers->next;
 		}
+#ifdef UWSGI_DBGTRACE
+		if (geo_dbg_ReadMatch)
+		    uwsgi_Glog("[http_parse GET /api/histories] http_session body, return 1\n", 0);
+
+#endif
 		return 1;
-	}
+	} //if this was body
 
 	// ensure the headers timeout is honoured
 	http_set_timeout(main_peer, uhttp.headers_timeout);
@@ -827,15 +895,28 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 			struct uwsgi_corerouter *ucr = main_peer->session->corerouter;
 
 			// create a new peer
-                	struct corerouter_peer *new_peer = uwsgi_cr_peer_add(main_peer->session);
+            struct corerouter_peer *new_peer = uwsgi_cr_peer_add(main_peer->session);
 			// default hook
 			new_peer->last_hook_read = hr_instance_read;
 
 			// parse HTTP request
-			if (http_headers_parse(new_peer)) return -1;
+			if (http_headers_parse(new_peer)) {
+#ifdef UWSGI_DBGTRACE
+				if (geo_dbg_ReadMatch)
+					uwsgi_Glog("[http_parse GET /api/histories] http_headers_parse(new_peer) caused return -1!\n", 0);
+#endif
+				return -1;
+			}
 
 			// check for a valid hostname
-			if (new_peer->key_len == 0) return -1;
+			if (new_peer->key_len == 0) {
+#ifdef UWSGI_DBGTRACE
+		if (geo_dbg_ReadMatch)
+		    uwsgi_Glog("[http_parse GET /api/histories] new_peer->key_len == 0!\n");
+
+#endif
+				return -1;
+			}
 
 #ifdef UWSGI_SSL
 			if (hr->force_https) {
@@ -844,13 +925,22 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 			}
 #endif
 			// find an instance using the key
-                	if (ucr->mapper(ucr, new_peer))
-                        	return -1;
+			if (ucr->mapper(ucr, new_peer)) {
+#ifdef UWSGI_DBGTRACE
+		if (geo_dbg_ReadMatch)
+		    uwsgi_Glog("[http_parse GET /api/histories] ucr->mapper(ucr, new_peer) failed!\n");
+#endif
+				return -1;
+			}
+			// check instance
+			if (new_peer->instance_address_len == 0) {
+#ifdef UWSGI_DBGTRACE
+		if (geo_dbg_ReadMatch)
+		    uwsgi_Glog("[http_parse GET /api/histories] new_peer->instance_address_len == 0!\n");
 
-                	// check instance
-                	if (new_peer->instance_address_len == 0)
-                        	return -1;
-
+#endif
+				return -1;
+			}
 			// fix modifiers
 			if (uhttp.modifier1)
 				new_peer->modifier1 = uhttp.modifier1;
@@ -875,7 +965,14 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 				else {
 					hr->content_length -= hr->remains;
 				}
-				if (uwsgi_buffer_append(new_peer->out, main_peer->in->buf + hr->headers_size + 1, hr->remains)) return -1;
+				if (uwsgi_buffer_append(new_peer->out, main_peer->in->buf + hr->headers_size + 1, hr->remains)) {
+#ifdef UWSGI_DBGTRACE
+		if (geo_dbg_ReadMatch)
+		    uwsgi_Glog("[http_parse GET /api/histories] uwsgi_buffer_append(new_peer->out,...) failed!\n");
+
+#endif
+					return -1;
+				}
 			}
 
 			if (new_peer->modifier1 == 123) {
@@ -898,7 +995,14 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 			}
 
 			if (hr->send_expect_100) {
-				if (hr_manage_expect_continue(new_peer)) return -1;
+				if (hr_manage_expect_continue(new_peer)) {
+#ifdef UWSGI_DBGTRACE
+		if (geo_dbg_ReadMatch)
+		    uwsgi_Glog("[http_parse GET /api/histories] hr_manage_expect_continue(new_peer) failed!\n");
+
+#endif
+					return -1;
+				}
 				break;
         		}
 
@@ -908,7 +1012,23 @@ ssize_t http_parse(struct corerouter_peer *main_peer) {
 			http_set_timeout(main_peer, uhttp.cr.socket_timeout);
 			// set peer timeout
 			http_set_timeout(new_peer, uhttp.connect_timeout);
-                	cr_connect(new_peer, hr_instance_connected);
+			//
+			//cr_connect(new_peer, hr_instance_connected);
+			//expand here for debugging:
+			new_peer->fd = uwsgi_connectn(new_peer->instance_address, new_peer->instance_address_len, 0, 1);\
+			if (new_peer->fd < 0) {
+				new_peer->failed = 1;
+				new_peer->soopt = errno;
+#ifdef UWSGI_DBGTRACE
+		if (geo_dbg_ReadMatch)
+		    uwsgi_Glog("[http_parse GET /api/histories] uwsgi_connectn(new_peer->instance_address, ...) failed!\n");
+#endif
+				return -1;
+			}
+			new_peer->session->corerouter->cr_table[new_peer->fd] = new_peer;
+			new_peer->connecting = 1;
+			cr_write_to_backend(new_peer, hr_instance_connected);
+
 			break;
 		}
 		else {
@@ -935,6 +1055,8 @@ ssize_t hr_read(struct corerouter_peer *main_peer) {
         if (len>16) {
           GEO_DBG_CKREAD(main_peer->fd, (main_peer->in->buf+main_peer->in->pos), len)
         }
+        GEO_DBG("[hr_read] : main_peer(%p) ->fd=%d, main_peer->session->main_peer=%p (->fd=%d), main_peer->un=%p\n",
+        		main_peer, main_peer->fd, main_peer->session->main_peer, main_peer->session->main_peer->fd, main_peer->un)
         if (main_peer != main_peer->session->main_peer && main_peer->un)
         	main_peer->un->tx+=len;
         main_peer->in->pos += len;

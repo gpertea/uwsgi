@@ -33,17 +33,18 @@ extern "C" {
 #ifdef UWSGI_DEBUG
   #define GEO_DBG(x, ...) uwsgi_Glog(x, __VA_ARGS__);
   #ifdef UWSGI_DBGTRACE
+  extern int geo_dbg_read_match;
  #define GEO_DBGT(x, ...) { uwsgi_Glog(x, __VA_ARGS__); \
                            uwsgi_Gbacktrace(); }
  #define GEO_DBG_CKREAD(fd, buf, len) geo_dbg_checkread(fd, (buf), (len));
   #else
  #define GEO_DBGT(x, ...) uwsgi_Glog(x, __VA_ARGS__);
- #define GEO_DBG_CKREAD(fd, buf, len) 
+ #define GEO_DBG_CKREAD(fd, buf, len)
   #endif
 #else
-  #define GEO_DBG(x, ...) 
-  #define GEO_DBGT(x, ...) 
-  #define GEO_DBG_CKREAD(fd, buf, len) 
+  #define GEO_DBG(x, ...)
+  #define GEO_DBGT(x, ...)
+  #define GEO_DBG_CKREAD(fd, buf, len)
 #endif
 // Geo mod end
 

@@ -139,7 +139,7 @@ void uwsgi_Glog(const char *fmt, ...) {
 	rlen = write(2, logpkt, rlen);
 }
 
-#ifdef UWSGI_DBGTRACE 
+#ifdef UWSGI_DBGTRACE
 
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
@@ -206,9 +206,9 @@ void geo_dbg_checkread(int fd, char* buf, int rlen) {
     restlen-=(p-(char*)oldp);
     oldp=p;
   }//while
+  geo_dbg_read_match=found;
   if (found) {
 	  GEO_DBG("readmatch - buf read from fd %d matches /api/histories/... \n", fd);
-	  //uwsgi_Gbacktrace();
 	  uwsgi_Gbacktrace();
   }
 }

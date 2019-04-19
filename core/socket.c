@@ -1390,9 +1390,13 @@ void uwsgi_add_sockets_to_queue(int queue, int async_id) {
 	while (uwsgi_sock) {
 		if (uwsgi_sock->fd_threads && async_id > -1 && uwsgi_sock->fd_threads[async_id] > -1) {
 			event_queue_add_fd_read(queue, uwsgi_sock->fd_threads[async_id]);
+			GEO_DBG("[uwsgi_add_sockets_to_queue] adding fd %d from uwsgi_sock->fd_threads[%d] to queue %d\n",
+					uwsgi_sock->fd_threads[async_id], async_id, queue)
 		}
 		else if (uwsgi_sock->fd > -1) {
 			event_queue_add_fd_read(queue, uwsgi_sock->fd);
+			GEO_DBG("[uwsgi_add_sockets_to_queue] adding uwsgi_sock->fd %d to queue %d\n",
+					uwsgi_sock->fd, queue)
 		}
 		uwsgi_sock = uwsgi_sock->next;
 	}
