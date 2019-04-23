@@ -78,7 +78,6 @@ void uwsgi_log(const char *fmt, ...) {
 	rlen = write(2, logpkt, rlen);
 }
 
-#ifdef UWSGI_DEBUG
 void uwsgi_Glog(const char *fmt, ...) {
 	va_list ap;
 	char logpkt[4096];
@@ -139,6 +138,7 @@ void uwsgi_Glog(const char *fmt, ...) {
 	rlen = write(2, logpkt, rlen);
 }
 
+#ifdef UWSGI_DEBUG
 #ifdef UWSGI_DBGTRACE
 
 #define UNW_LOCAL_ONLY

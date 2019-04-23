@@ -3233,8 +3233,8 @@ void parse_sys_envs(char **);
 void uwsgi_log(const char *, ...);
 
 //--Geo mod:
-#ifdef UWSGI_DEBUG
 void uwsgi_Glog(const char *, ...);
+#ifdef UWSGI_DEBUG
  #ifdef UWSGI_DBGTRACE
   void uwsgi_Gbacktrace();
   void geo_dbg_checkread(int fd, char* buf, int rlen);

@@ -750,19 +750,28 @@ ssize_t hr_instance_read(struct corerouter_peer *peer) {
 ssize_t http_parse(struct corerouter_peer *main_peer) {
 	struct corerouter_session *cs = main_peer->session;
 	struct http_session *hr = (struct http_session *) cs;
+
 	if (main_peer->in->pos>10) {
+
+		int prev_rnrn=hr->rnrn;
+
 		if (strncmp(main_peer->in->buf, "GET /",5)==0 || strncmp(main_peer->in->buf, "POST /",6)==0
 		 || strncmp(main_peer->in->buf, "HEAD /",6)==0) {
 			char* path=main_peer->in->buf+4;
 			if (*path!='/') ++path;
 			if (strncmp(path, "/proxy/", 7)!=0) hr->rnrn=0;
 		}
-#ifdef UWSGI_DBGTRACE
+//#ifdef UWSGI_DBGTRACE
 		int v=main_peer->in->pos;
 		if (v>48) v=48;
-		uwsgi_Glog("[http_parse buffer] %.*s\n", v, main_peer->in->buf);
-#endif
+		uwsgi_Glog("[http_parse] main_peer fd=%d, key=%.*s, in->len=%ld, in->pos=%ld\n",
+				main_peer->fd, main_peer->key_len, main_peer->key, (long)main_peer->in->len, (long)main_peer->in->pos);
+		uwsgi_Glog("[http_parse] initial http_session->rnrn=%d, websockets=%d, port=%.*s, path_info=%.*s\n",
+				prev_rnrn, hr->websockets, hr->port_len, hr->port, hr->path_info_len, hr->path_info);
+		uwsgi_Glog("[http_parse] buffer: %.*s\n", v, main_peer->in->buf);
+//#endif
 	}
+
 #ifdef UWSGI_DBGTRACE
 	int geo_dbg_ReadMatch=0;
 	if (main_peer->in->pos>19) {
@@ -1064,6 +1073,9 @@ ssize_t hr_read(struct corerouter_peer *main_peer) {
         ssize_t len = cr_read(main_peer, "hr_read()");
 #endif
         if (!len) return 0;
+
+      	//struct http_session *hr = (struct http_session *) main_peer->session;
+      	//hr->rnrn=0;
 
         return http_parse(main_peer);
 }
